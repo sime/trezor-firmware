@@ -24,10 +24,45 @@ import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Set, TypedDict
 
-Error = Dict[str, Any]
+
+class RangeDetail(TypedDict):
+    line: int
+    character: int
+
+
+class Range(TypedDict):
+    start: RangeDetail
+    end: RangeDetail
+
+
+class Error(TypedDict):
+    file: str
+    severity: str
+    message: str
+    range: Range
+    rule: str
+
+
 Errors = List[Error]
+
+
+class Summary(TypedDict):
+    filesAnalyzed: int
+    errorCount: int
+    warningCount: int
+    informationCount: int
+    timeInSec: float
+
+
+class PyrightResults(TypedDict):
+    version: str
+    time: str
+    generalDiagnostics: Errors
+    summary: Summary
+
+
 
 
 @dataclass
@@ -130,11 +165,11 @@ class PyrightTool:
         print(
             f"\nIgnored {self.count_of_ignored_errors} custom-defined errors from {len(self.all_pyright_ignores)} files."
         )
-        if len(real_errors) == 0:
+        if not real_errors:
             print("Everything is fine!")
             if has_unused_ignores:
                 print("But we have unused ignores!")
-                sys.exit(1)
+                sys.exit(2)
             else:
                 sys.exit(0)
         else:
@@ -147,12 +182,17 @@ class PyrightTool:
             sys.exit(1)
 
     def get_original_pyright_errors(self) -> Errors:
-        """Extract error objects from pyright"""
+        """Extract error objects from pyright.
+
+        `pyright --outputjson` will return all the results in
+        nice JSON format with `generalDiagnostics` array storing
+        all the errors - schema described in PyrightResults
+        """
         # TODO: probably make this cleaner and less hacky
         if SHOULD_GENERATE_ERROR_FILE:
             os.system(f"pyright --outputjson > {self.ERROR_FILE}")
 
-        data = json.loads(open(self.ERROR_FILE, "r").read())
+        data: PyrightResults = json.loads(open(self.ERROR_FILE, "r").read())
 
         if SHOULD_DELETE_ERROR_FILE:
             os.system(f"rm {self.ERROR_FILE}")
@@ -180,20 +220,21 @@ class PyrightTool:
             error_message = error["message"]
             line_no = error["range"]["start"]["line"]
 
+            # Checking in file_specific_ignores
             if self.should_ignore_file_specific_error(file_path, error):
                 self.count_of_ignored_errors += 1
                 self.log_ignore(error, "file specific error")
                 continue
 
+            # Checking for "# pyright: off" mark
             if self.is_pyright_disabled_for_this_line(file_path, line_no):
                 self.count_of_ignored_errors += 1
                 self.log_ignore(error, "pyright disabled for this line")
                 continue
 
-            # file_ignores = self.get_pyright_ignores_from_file(file_path)
-            file_ignores = self.all_pyright_ignores[file_path]
-
+            # Checking fir "# pyright: ignore [<error_substring>]" comment
             # TOOO: could be made simpler/more efficient
+            file_ignores = self.all_pyright_ignores[file_path]
             should_be_ignored = False
             for ignore_index, ignore in enumerate(file_ignores):
                 if line_no == ignore.line_no:
@@ -204,6 +245,7 @@ class PyrightTool:
                             should_be_ignored = True
                             self.count_of_ignored_errors += 1
                             self.log_ignore(error, "error substring matched")
+                            # Marking this ignore to be used (so we can identify unused ignores)
                             self.all_pyright_ignores[file_path][
                                 ignore_index
                             ].ignore_statements[substring_index].already_used = True
