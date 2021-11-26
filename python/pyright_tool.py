@@ -24,7 +24,7 @@ import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Set, TypedDict
+from typing import Dict, List, Set, TypedDict
 
 
 class RangeDetail(TypedDict):
@@ -68,17 +68,11 @@ class IgnoreStatement:
     substring: str
     already_used: bool = False
 
-    def __setitem__(self, key: str, value: Any) -> None:
-        self.key = value
-
 
 @dataclass
 class LineIgnore:
     line_no: int
     ignore_statements: List[IgnoreStatement]
-
-    def __setitem__(self, key: str, value: Any) -> None:
-        self.key = value
 
 
 LineIgnores = List[LineIgnore]
