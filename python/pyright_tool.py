@@ -167,7 +167,7 @@ class PyrightTool:
                 if self.OFF_PATTERN in line:
                     pyright_off = True
                 elif self.ON_PATTERN in line:
-                    pyright_off = True
+                    pyright_off = False
 
         return False
 
