@@ -25,6 +25,14 @@ from trezorlib import firmware
 from trezorlib._internal import firmware_headers
 
 
+def trial_for_pyright():
+    x = 3
+    x + "4"
+    x + "5"
+    x + "6"
+    x + "7"
+
+
 @click.command()
 @click.argument("filename", type=click.File("rb"))
 @click.option("-o", "--output", type=click.File("w"), default="-")
