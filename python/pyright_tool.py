@@ -227,6 +227,11 @@ class PyrightTool:
                 self.log_ignore(error, "pyright disabled for this line")
                 continue
 
+            # File with issue might not have any pyright: ignores
+            if file_path not in self.all_pyright_ignores:
+                real_errors.append(error)
+                continue
+
             # Checking for "# pyright: ignore [<error_substring>]" comment
             # TOOO: could be made simpler/more efficient
             file_ignores = self.all_pyright_ignores[file_path]
@@ -304,7 +309,8 @@ class PyrightTool:
                 for ignore_statement in line_ignore.ignore_statements:
                     if not ignore_statement.already_used:
                         unused_ignores.append(
-                            f"File {file} has unused ignore at line {line_ignore.line_no} - {ignore_statement.substring}"
+                            f"File {file} has unused ignore at line {line_ignore.line_no + 1}. "
+                            f"Substring: {ignore_statement.substring}"
                         )
 
         if unused_ignores:
