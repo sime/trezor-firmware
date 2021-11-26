@@ -33,12 +33,17 @@ IgnoreStatements = List[str]
 Ignore = Tuple[int, IgnoreStatements]
 Ignores = List[Ignore]
 
-# Set False for development purposes (after getting the error file)
-if len(sys.argv) > 1 and "test" in sys.argv[1]:
-    SHOULD_GENERATE_ERROR_FILE_AND_CLEAN_IT = False
+if len(sys.argv) > 1 and "dev" in sys.argv[1]:
+    SHOULD_GENERATE_ERROR_FILE= True
+    SHOULD_DELETE_ERROR_FILE = False
+    print("Running in dev mode, creating the file and not deleting it")
+elif len(sys.argv) > 1 and "test" in sys.argv[1]:
+    SHOULD_GENERATE_ERROR_FILE= False
+    SHOULD_DELETE_ERROR_FILE = False
     print("Running in test mode, will reuse existing error file")
 else:
-    SHOULD_GENERATE_ERROR_FILE_AND_CLEAN_IT = True
+    SHOULD_GENERATE_ERROR_FILE= True
+    SHOULD_DELETE_ERROR_FILE = True
 
 HERE = Path(__file__).parent.resolve()
 
@@ -62,6 +67,8 @@ class PyrightTool:
     def __init__(self) -> None:
         self.ERROR_FILE = "errors_for_pyright_temp.json"
 
+        self.ON_PATTERN = "# pyright: on"
+        self.OFF_PATTERN = "# pyright: off"
         self.IGNORE_PATTERN = "# pyright: ignore "
         self.IGNORE_DELIMITER = ";;"
 
@@ -88,12 +95,12 @@ class PyrightTool:
 
     def get_original_pyright_errors(self) -> Errors:
         # TODO: probably make this cleaner and less hacky
-        if SHOULD_GENERATE_ERROR_FILE_AND_CLEAN_IT:
+        if SHOULD_GENERATE_ERROR_FILE:
             os.system(f"pyright --outputjson > {self.ERROR_FILE}")
 
         data = json.loads(open(self.ERROR_FILE, "r").read())
 
-        if SHOULD_GENERATE_ERROR_FILE_AND_CLEAN_IT:
+        if SHOULD_DELETE_ERROR_FILE:
             os.system(f"rm {self.ERROR_FILE}")
 
         return data["generalDiagnostics"]
@@ -113,6 +120,10 @@ class PyrightTool:
             line_no = error["range"]["start"]["line"]
 
             if self.should_ignore_file_specific_error(file_path, error):
+                self.count_of_ignored_errors += 1
+                continue
+
+            if self.is_pyright_disabled_for_this_line(file_path, line_no):
                 self.count_of_ignored_errors += 1
                 continue
 
@@ -143,6 +154,20 @@ class PyrightTool:
             elif "substring" in ignore_object:
                 if ignore_object["substring"] in error["message"]:
                     return True
+
+        return False
+
+    def is_pyright_disabled_for_this_line(self, file: str, line_no: int) -> bool:
+        # TODO: we could have a function returning ranges of enabled/disabled lines
+        with open(file, "r") as f:
+            pyright_off = False
+            for index, line in enumerate(f):
+                if index == line_no:
+                    return pyright_off
+                if self.OFF_PATTERN in line:
+                    pyright_off = True
+                elif self.ON_PATTERN in line:
+                    pyright_off = True
 
         return False
 
