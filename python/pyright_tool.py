@@ -121,16 +121,19 @@ class PyrightTool:
         self.all_pyright_ignores = self.get_all_pyright_ignores(all_files_to_check)
 
     def run(self) -> None:
+        """Main function, putting together all logic and evaluating result"""
         original_pyright_errors = self.get_original_pyright_errors()
         real_errors = self.get_all_real_errors(original_pyright_errors)
 
         has_unused_ignores = self.check_for_unused_ignores()
 
-        print(f"\nIgnored {self.count_of_ignored_errors} custom-defined errors.")
+        print(
+            f"\nIgnored {self.count_of_ignored_errors} custom-defined errors from {len(self.all_pyright_ignores)} files."
+        )
         if len(real_errors) == 0:
             print("Everything is fine!")
             if has_unused_ignores:
-                print("But we have unused imports!")
+                print("But we have unused ignores!")
                 sys.exit(1)
             else:
                 sys.exit(0)
@@ -139,9 +142,12 @@ class PyrightTool:
             for error in real_errors:
                 self.print_human_readable_error(error)
             print(f"Found {len(real_errors)} issues above")
+            if has_unused_ignores:
+                print("And we have unused ignores!")
             sys.exit(1)
 
     def get_original_pyright_errors(self) -> Errors:
+        """Extract error objects from pyright"""
         # TODO: probably make this cleaner and less hacky
         if SHOULD_GENERATE_ERROR_FILE:
             os.system(f"pyright --outputjson > {self.ERROR_FILE}")
@@ -154,6 +160,13 @@ class PyrightTool:
         return data["generalDiagnostics"]
 
     def get_all_real_errors(self, original_pyright_errors: Errors) -> Errors:
+        """Analyze all pyright errors and discard all that should be ignored.
+
+        Ignores can be different:
+        - as per "# pyright: ignore [<error_substring>]" comment
+        - as per "file_specific_ignores"
+        - as per "# pyright: off" mark
+        """
         real_errors: Errors = []
         for error in original_pyright_errors:
             # Special handling of cycle import issues, which have different format
@@ -201,6 +214,7 @@ class PyrightTool:
         return real_errors
 
     def get_all_files_to_check(self) -> Set[str]:
+        """Get all files to be analyzed by pyright, based on its config"""
         all_files: Set[str] = set()
         data = json.loads(open(self.PYRIGHT_CONFIG_FILE, "r").read())
 
@@ -208,6 +222,11 @@ class PyrightTool:
             for folder_or_file in data["include"]:
                 for file in self.get_all_py_files_recursively(folder_or_file):
                     all_files.add(file)
+        else:
+            # "include" is missing, we should analyze all files in root dir
+            for file in self.get_all_py_files_recursively("."):
+                all_files.add(file)
+
         if "exclude" in data:
             for folder_or_file in data["exclude"]:
                 for file in self.get_all_py_files_recursively(folder_or_file):
@@ -218,18 +237,20 @@ class PyrightTool:
 
     @staticmethod
     def get_all_py_files_recursively(folder_or_file: str) -> Set[str]:
-        all_files: Set[str] = set()
+        """Return all python files in certain folder (or the file itself)"""
         if os.path.isfile(folder_or_file):
-            all_files.add(str(HERE / folder_or_file))
-        else:
-            for root, _, files in os.walk(folder_or_file):
-                for file in files:
-                    if file.endswith(".py"):
-                        all_files.add(str(HERE / os.path.join(root, file)))
+            return set(str(HERE / folder_or_file))
+
+        all_files: Set[str] = set()
+        for root, _, files in os.walk(folder_or_file):
+            for file in files:
+                if file.endswith(".py"):
+                    all_files.add(str(HERE / os.path.join(root, file)))
 
         return all_files
 
     def get_all_pyright_ignores(self, all_files_to_check: Set[str]) -> FileIgnores:
+        """Get ignore information from all the files to be analyzed"""
         file_ignores: FileIgnores = {}
         for file in all_files_to_check:
             ignores = self.get_pyright_ignores_from_file(file)
@@ -239,6 +260,7 @@ class PyrightTool:
         return file_ignores
 
     def check_for_unused_ignores(self) -> bool:
+        """Evaluate if there are no ignores not matched by existing pyright errors"""
         unused_ignores: List[str] = []
         for file, file_ignores in self.all_pyright_ignores.items():
             for line_ignore in file_ignores:
@@ -254,6 +276,7 @@ class PyrightTool:
         return bool(unused_ignores)
 
     def should_ignore_file_specific_error(self, file: str, error: Error) -> bool:
+        """Check if file has some overall ignore either in rule or in substring"""
         if file not in self.file_specific_ignores:
             return False
 
@@ -268,6 +291,7 @@ class PyrightTool:
         return False
 
     def is_pyright_disabled_for_this_line(self, file: str, line_no: int) -> bool:
+        """Check if line is not in block of code disabled by # pyright: off"""
         # TODO: we could have a function returning ranges of enabled/disabled lines
         with open(file, "r") as f:
             pyright_off = False
@@ -282,6 +306,7 @@ class PyrightTool:
         return False
 
     def get_pyright_ignores_from_file(self, file: str) -> LineIgnores:
+        """Get all ignore lines and statements from a certain file"""
         ignores: LineIgnores = []
         with open(file, "r") as f:
             for index, line in enumerate(f):
@@ -292,6 +317,7 @@ class PyrightTool:
         return ignores
 
     def get_ignore_statements(self, line: str) -> List[IgnoreStatement]:
+        """Extract error substrings to be ignored from a certain line"""
         # TODO: could make some regex instead
         statement_substrings = (
             line.split(self.IGNORE_PATTERN)[1]
@@ -302,9 +328,11 @@ class PyrightTool:
         return [IgnoreStatement(substr) for substr in statement_substrings]
 
     def print_human_readable_error(self, error: Error) -> None:
+        """Show a human-readable form of uncaught error"""
         print(self.get_human_readable_error_string(error))
 
     def log_ignore(self, error: Error, reason: str) -> None:
+        """Print the action of ignoring certain error into the console"""
         if LOG:
             err = self.get_human_readable_error_string(error)
             to_log = f"\nError ignored. Reason: {reason}.\nErr: {err}"
@@ -312,6 +340,7 @@ class PyrightTool:
 
     @staticmethod
     def get_human_readable_error_string(error: Error) -> str:
+        """Transform error object to a string readable by human"""
         file = error["file"]
         message = error["message"]
         rule = error["rule"]
