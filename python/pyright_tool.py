@@ -11,15 +11,14 @@ Usage:
 - run this tool and see if that error is no longer reported
 
 TODO FEATURES:
-- ignoring of specific rules and error substrings for specific files/blocks of code
 - report unused ignores
-- some optional logging
 
 ISSUES:
 - "# pyright: ignore" is not understood by `black` as a type comment, so it is being affected
     and restyled - we might have to use "# type: ignore" instead
 """
 
+import argparse
 import json
 import os
 import sys
@@ -33,17 +32,32 @@ IgnoreStatements = List[str]
 Ignore = Tuple[int, IgnoreStatements]
 Ignores = List[Ignore]
 
-if len(sys.argv) > 1 and "dev" in sys.argv[1]:
-    SHOULD_GENERATE_ERROR_FILE= True
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--dev", action="store_true", help="Creating the error file and not deleting it"
+)
+parser.add_argument(
+    "--test",
+    action="store_true",
+    help="Reusing existing error file and not deleting it",
+)
+parser.add_argument("--log", action="store_true", help="Log details")
+args = parser.parse_args()
+
+if args.dev:
+    SHOULD_GENERATE_ERROR_FILE = True
     SHOULD_DELETE_ERROR_FILE = False
     print("Running in dev mode, creating the file and not deleting it")
-elif len(sys.argv) > 1 and "test" in sys.argv[1]:
-    SHOULD_GENERATE_ERROR_FILE= False
+elif args.test:
+    SHOULD_GENERATE_ERROR_FILE = False
     SHOULD_DELETE_ERROR_FILE = False
     print("Running in test mode, will reuse existing error file")
 else:
-    SHOULD_GENERATE_ERROR_FILE= True
+    SHOULD_GENERATE_ERROR_FILE = True
     SHOULD_DELETE_ERROR_FILE = True
+
+LOG = args.log
+
 
 HERE = Path(__file__).parent.resolve()
 
@@ -53,12 +67,16 @@ file_specific_ignores = {
     "tools/helloworld.py": (
         {"rule": "reportMissingParameterType"},
         {"rule": "reportGeneralTypeIssues"},
-        {"substring": 'Argument of type "Literal[3]" cannot be assigned to parameter "__k" of type "str"'},
+        {
+            "substring": 'Argument of type "Literal[3]" cannot be assigned to parameter "__k" of type "str"'
+        },
     ),
     "tools/firmware-fingerprint.py": (
         {"rule": "reportMissingParameterType"},
         {"rule": "reportGeneralTypeIssues"},
-        {"substring": 'Operator "+" not supported for types "Literal[3]" and "Literal['},
+        {
+            "substring": 'Operator "+" not supported for types "Literal[3]" and "Literal['
+        },
     ),
 }
 
@@ -121,10 +139,12 @@ class PyrightTool:
 
             if self.should_ignore_file_specific_error(file_path, error):
                 self.count_of_ignored_errors += 1
+                self.log_ignore(error, "file specific error")
                 continue
 
             if self.is_pyright_disabled_for_this_line(file_path, line_no):
                 self.count_of_ignored_errors += 1
+                self.log_ignore(error, "pyright disabled for this line")
                 continue
 
             file_ignores = self.get_pyright_ignores_from_file(file_path)
@@ -137,6 +157,7 @@ class PyrightTool:
                         if ignore_string in error_message:
                             should_be_ignored = True
                             self.count_of_ignored_errors += 1
+                            self.log_ignore(error, "error substring matched")
 
             if not should_be_ignored:
                 real_errors.append(error)
@@ -190,15 +211,24 @@ class PyrightTool:
             .split(self.IGNORE_DELIMITER)
         )
 
+    def print_human_readable_error(self, error: Error) -> None:
+        print(self.get_human_readable_error_string(error))
+
+    def log_ignore(self, error: Error, reason: str) -> None:
+        if LOG:
+            err = self.get_human_readable_error_string(error)
+            to_log = f"\nError ignored. Reason: {reason}.\nErr: {err}"
+            print(to_log)
+
     @staticmethod
-    def print_human_readable_error(error: Error) -> None:
+    def get_human_readable_error_string(error: Error) -> str:
         file = error["file"]
         message = error["message"]
         rule = error["rule"]
         line = error["range"]["start"]["line"]
 
         # Need to add +1 to the line, as it is zero-based index
-        print(f"{file}:{line + 1}: - error: {message} ({rule})\n")
+        return f"{file}:{line + 1}: - error: {message} ({rule})\n"
 
 
 if __name__ == "__main__":
