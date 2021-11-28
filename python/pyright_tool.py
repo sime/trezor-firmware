@@ -26,7 +26,7 @@ import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Set, Tuple, TypedDict, Union
+from typing import Dict, List, Set, TypedDict, Union
 
 
 class RangeDetail(TypedDict):
@@ -80,7 +80,19 @@ class LineIgnore:
 LineIgnores = List[LineIgnore]
 FileIgnores = Dict[str, LineIgnores]
 
-FileSpecificIgnores = Dict[str, Tuple[Dict[str, str], ...]]
+
+@dataclass
+class FileSpecificIgnore:
+    rule: str = ""
+    substring: str = ""
+    already_used: bool = False
+
+    def __post_init__(self):
+        if self.rule and self.substring:
+            raise ValueError("Only one of rule|substring should be set")
+
+
+FileSpecificIgnores = Dict[str, List[FileSpecificIgnore]]
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -115,20 +127,24 @@ HERE = Path(__file__).parent.resolve()
 # TODO: move into a JSON or other config file
 # Files need to have a relative location to the directory of this file (/python)
 FILE_SPECIFIC_IGNORES = {
-    "tools/helloworld.py": (
-        {"rule": "reportMissingParameterType"},
-        {"rule": "reportGeneralTypeIssues"},
-        {
-            "substring": 'Argument of type "Literal[3]" cannot be assigned to parameter "__k" of type "str"'
-        },
-    ),
-    "tools/firmware-fingerprint.py": (
-        {"rule": "reportMissingParameterType"},
-        {
-            "substring": 'Operator "+" not supported for types "Literal[3]" and "Literal['
-        },
-    ),
+    "tools/helloworld.py": [
+        FileSpecificIgnore(rule="reportMissingParameterType"),
+        FileSpecificIgnore(rule="reportGeneralTypeIssues"),
+        FileSpecificIgnore(
+            substring='Argument of type "Literal[3]" cannot be assigned to parameter "__k" of type "str"'
+        ),
+    ],
+    "tools/firmware-fingerprint.py": [
+        FileSpecificIgnore(
+            substring='Operator "+" not supported for types "Literal[3]" and "Literal['
+        ),
+    ],
 }
+
+# Putting substrings at the beginning of ignore-lists, so they are matched before rules
+# (Not to leave them potentially unused when error would be matched by a rule instead)
+for file in FILE_SPECIFIC_IGNORES:
+    FILE_SPECIFIC_IGNORES[file].sort(key=lambda x: x.substring, reverse=True)
 
 
 class PyrightTool:
@@ -330,6 +346,7 @@ class PyrightTool:
     def get_unused_ignores(self) -> List[str]:
         """Evaluate if there are no ignores not matched by existing pyright errors."""
         unused_ignores: List[str] = []
+
         for file, file_ignores in self.all_pyright_ignores.items():
             for line_ignore in file_ignores:
                 for ignore_statement in line_ignore.ignore_statements:
@@ -337,6 +354,20 @@ class PyrightTool:
                         unused_ignores.append(
                             f"File {file} has unused ignore at line {line_ignore.line_no + 1}. "
                             f"Substring: {ignore_statement.substring}"
+                        )
+
+        for file, file_ignores in self.file_specific_ignores.items():
+            for ignore_object in file_ignores:
+                if not ignore_object.already_used:
+                    if ignore_object.substring:
+                        unused_ignores.append(
+                            f"File {file} has unused specific ignore substring. "
+                            f"Substring: {ignore_object.substring}"
+                        )
+                    elif ignore_object.rule:
+                        unused_ignores.append(
+                            f"File {file} has unused specific ignore rule. "
+                            f"Rule: {ignore_object.rule}"
                         )
 
         return unused_ignores
@@ -347,11 +378,13 @@ class PyrightTool:
             return False
 
         for ignore_object in self.file_specific_ignores[file]:
-            if "rule" in ignore_object:
-                if error["rule"] == ignore_object["rule"]:
+            if ignore_object.rule:
+                if error["rule"] == ignore_object.rule:
+                    ignore_object.already_used = True
                     return True
-            elif "substring" in ignore_object:
-                if ignore_object["substring"] in error["message"]:
+            elif ignore_object.substring:
+                if ignore_object.substring in error["message"]:
+                    ignore_object.already_used = True
                     return True
 
         return False
