@@ -94,6 +94,17 @@ class FileSpecificIgnore:
 
 FileSpecificIgnores = Dict[str, List[FileSpecificIgnore]]
 
+@dataclass
+class PyrightOffIgnore:
+    start_line: int
+    end_line: int
+    already_used: bool = False
+
+
+PyrightOffIgnores = List[PyrightOffIgnore]
+
+FilePyrightOffIgnores = Dict[str, PyrightOffIgnores]
+
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "--dev", action="store_true", help="Creating the error file and not deleting it"
@@ -156,6 +167,7 @@ class PyrightTool:
     original_pyright_results: PyrightResults
     all_files_to_check: Set[str]
     all_pyright_ignores: FileIgnores
+    pyright_off_ignores: FilePyrightOffIgnores
     real_errors: Errors
     unused_ignores: List[str]
 
@@ -183,6 +195,7 @@ class PyrightTool:
 
         self.all_files_to_check = self.get_all_files_to_check()
         self.all_pyright_ignores = self.get_all_pyright_ignores()
+        self.pyright_off_ignores = self.get_pyright_off_ignores()
 
         self.real_errors = self.get_all_real_errors()
         self.unused_ignores = self.get_unused_ignores()
@@ -264,7 +277,7 @@ class PyrightTool:
                 continue
 
             # Checking for "# pyright: off" mark
-            if self.is_pyright_disabled_for_this_line(file_path, line_no):
+            if self.is_line_in_pyright_off_block(file_path, line_no):
                 self.count_of_ignored_errors += 1
                 self.log_ignore(error, "pyright disabled for this line")
                 continue
@@ -343,10 +356,20 @@ class PyrightTool:
 
         return file_ignores
 
+    def get_pyright_off_ignores(self) -> FilePyrightOffIgnores:
+        pyright_off_ignores: FilePyrightOffIgnores = {}
+        for file in self.all_files_to_check:
+            ignores = self.find_pyright_off_from_file(file)
+            if ignores:
+                pyright_off_ignores[file] = ignores
+
+        return pyright_off_ignores
+
     def get_unused_ignores(self) -> List[str]:
-        """Evaluate if there are no ignores not matched by existing pyright errors."""
+        """Evaluate if there are no ignores not matched by pyright errors."""
         unused_ignores: List[str] = []
 
+        # Pyright: ignore
         for file, file_ignores in self.all_pyright_ignores.items():
             for line_ignore in file_ignores:
                 for ignore_statement in line_ignore.ignore_statements:
@@ -356,6 +379,16 @@ class PyrightTool:
                             f"Substring: {ignore_statement.substring}"
                         )
 
+        # Pyright: off
+        for file, file_ignores in self.pyright_off_ignores.items():
+            for off_ignore in file_ignores:
+                if not off_ignore.already_used:
+                    unused_ignores.append(
+                        f"File {file} has unused # pyright: off ignore between lines "
+                        f"{off_ignore.start_line + 1} and {off_ignore.end_line + 1}."
+                    )
+
+        # File-specific
         for file, file_ignores in self.file_specific_ignores.items():
             for ignore_object in file_ignores:
                 if not ignore_object.already_used:
@@ -389,20 +422,43 @@ class PyrightTool:
 
         return False
 
-    def is_pyright_disabled_for_this_line(self, file: str, line_no: int) -> bool:
-        """Check if line is not in block of code disabled by # pyright: off."""
-        # TODO: we could have a function returning ranges of enabled/disabled lines
-        with open(file, "r") as f:
-            pyright_off = False
-            for index, line in enumerate(f):
-                if index == line_no:
-                    return pyright_off
-                if self.OFF_PATTERN in line:
-                    pyright_off = True
-                elif self.ON_PATTERN in line:
-                    pyright_off = False
+    def is_line_in_pyright_off_block(self, file: str, line_no: int) -> bool:
+        """Check if line should not be ignored per # pyright: off mark."""
+        if file not in self.pyright_off_ignores:
+            return False
+
+        for off_ignore in self.pyright_off_ignores[file]:
+            if off_ignore.start_line < line_no < off_ignore.end_line:
+                off_ignore.already_used = True
+                return True
 
         return False
+
+    def find_pyright_off_from_file(self, file: str) -> PyrightOffIgnores:
+        """Get sections in file to be ignored based on # pyright: off."""
+        pyright_off_ignores: PyrightOffIgnores = []
+        with open(file, "r") as f:
+            pyright_off = False
+            start_line = 0
+            index = 0
+            for index, line in enumerate(f):
+                if self.OFF_PATTERN in line:
+                    if not pyright_off:
+                        start_line = index
+                        pyright_off = True
+                elif self.ON_PATTERN in line:
+                    if pyright_off:
+                        pyright_off_ignores.append(
+                            PyrightOffIgnore(start_line, index)
+                        )
+                    pyright_off = False
+
+            if pyright_off:
+                pyright_off_ignores.append(
+                    PyrightOffIgnore(start_line, index)
+                )
+
+        return pyright_off_ignores
 
     def get_pyright_ignores_from_file(self, file: str) -> LineIgnores:
         """Get all ignore lines and statements from a certain file."""
