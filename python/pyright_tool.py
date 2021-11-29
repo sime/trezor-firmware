@@ -94,6 +94,7 @@ class FileSpecificIgnore:
 
 FileSpecificIgnores = Dict[str, List[FileSpecificIgnore]]
 
+
 @dataclass
 class PyrightOffIgnore:
     start_line: int
@@ -102,7 +103,6 @@ class PyrightOffIgnore:
 
 
 PyrightOffIgnores = List[PyrightOffIgnore]
-
 FilePyrightOffIgnores = Dict[str, PyrightOffIgnores]
 
 parser = argparse.ArgumentParser()
@@ -270,6 +270,14 @@ class PyrightTool:
             error_message = error["message"]
             line_no = error["range"]["start"]["line"]
 
+            # Checking for "# pyright: ignore [<error_substring>]" comment
+            if self.should_ignore_per_inline_substring(
+                file_path, error_message, line_no
+            ):
+                self.count_of_ignored_errors += 1
+                self.log_ignore(error, "error substring matched")
+                continue
+
             # Checking in file_specific_ignores
             if self.should_ignore_file_specific_error(file_path, error):
                 self.count_of_ignored_errors += 1
@@ -282,31 +290,7 @@ class PyrightTool:
                 self.log_ignore(error, "pyright disabled for this line")
                 continue
 
-            # File with issue might not have any pyright: ignores
-            if file_path not in self.all_pyright_ignores:
-                real_errors.append(error)
-                continue
-
-            # Checking for "# pyright: ignore [<error_substring>]" comment
-            # TOOO: could be made simpler/more efficient
-            file_ignores = self.all_pyright_ignores[file_path]
-            should_be_ignored = False
-            for ignore_index, ignore in enumerate(file_ignores):
-                if line_no == ignore.line_no:
-                    for substring_index, ignore_statement in enumerate(
-                        ignore.ignore_statements
-                    ):
-                        if ignore_statement.substring in error_message:
-                            should_be_ignored = True
-                            self.count_of_ignored_errors += 1
-                            self.log_ignore(error, "error substring matched")
-                            # Marking this ignore to be used (so we can identify unused ignores)
-                            self.all_pyright_ignores[file_path][
-                                ignore_index
-                            ].ignore_statements[substring_index].already_used = True
-
-            if not should_be_ignored:
-                real_errors.append(error)
+            real_errors.append(error)
 
         return real_errors
 
@@ -405,6 +389,26 @@ class PyrightTool:
 
         return unused_ignores
 
+    def should_ignore_per_inline_substring(
+        self, file: str, error_message: str, line_no: int
+    ) -> bool:
+        if file not in self.all_pyright_ignores:
+            return False
+
+        for ignore_index, ignore in enumerate(self.all_pyright_ignores[file]):
+            if line_no == ignore.line_no:
+                for substring_index, ignore_statement in enumerate(
+                    ignore.ignore_statements
+                ):
+                    if ignore_statement.substring in error_message:
+                        # Marking this ignore to be used (so we can identify unused ignores)
+                        self.all_pyright_ignores[file][ignore_index].ignore_statements[
+                            substring_index
+                        ].already_used = True
+                        return True
+
+        return False
+
     def should_ignore_file_specific_error(self, file: str, error: Error) -> bool:
         """Check if file has some overall ignore either in rule or in substring."""
         if file not in self.file_specific_ignores:
@@ -448,15 +452,11 @@ class PyrightTool:
                         pyright_off = True
                 elif self.ON_PATTERN in line:
                     if pyright_off:
-                        pyright_off_ignores.append(
-                            PyrightOffIgnore(start_line, index)
-                        )
-                    pyright_off = False
+                        pyright_off_ignores.append(PyrightOffIgnore(start_line, index))
+                        pyright_off = False
 
             if pyright_off:
-                pyright_off_ignores.append(
-                    PyrightOffIgnore(start_line, index)
-                )
+                pyright_off_ignores.append(PyrightOffIgnore(start_line, index))
 
         return pyright_off_ignores
 
