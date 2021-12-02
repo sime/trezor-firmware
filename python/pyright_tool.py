@@ -26,7 +26,7 @@ import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Set, TypedDict, Union
+from typing import Dict, Final, List, Optional, Set, TypedDict, Union
 
 
 class RangeDetail(TypedDict):
@@ -159,10 +159,10 @@ for file in FILE_SPECIFIC_IGNORES:
 
 
 class PyrightTool:
-    ON_PATTERN = "# pyright: on"
-    OFF_PATTERN = "# pyright: off"
-    IGNORE_PATTERN = "# pyright: ignore "
-    IGNORE_DELIMITER = ";;"
+    ON_PATTERN: Final = "# pyright: on"
+    OFF_PATTERN: Final = "# pyright: off"
+    IGNORE_PATTERN: Final = "# pyright: ignore "
+    IGNORE_DELIMITER: Final = ";;"
 
     original_pyright_results: PyrightResults
     all_files_to_check: Set[str]
@@ -173,15 +173,18 @@ class PyrightTool:
 
     def __init__(
         self,
-        file_specific_ignores: FileSpecificIgnores,
         pyright_config_file: Union[str, Path],
-        error_file: Union[str, Path],
-        should_generate_error_file: bool,
-        should_delete_error_file: bool,
+        *,
+        file_specific_ignores: Optional[FileSpecificIgnores] = None,
+        error_file: Union[str, Path] = "temp_error_file.json",
+        should_generate_error_file: bool = True,
+        should_delete_error_file: bool = True,
         should_log: bool = False,
     ) -> None:
-        self.file_specific_ignores = file_specific_ignores
         self.pyright_config_file = pyright_config_file
+        self.file_specific_ignores = (
+            file_specific_ignores if file_specific_ignores else {}
+        )
         self.error_file = error_file
         self.should_generate_error_file = should_generate_error_file
         self.should_delete_error_file = should_delete_error_file
@@ -506,10 +509,10 @@ class PyrightTool:
 
 if __name__ == "__main__":
     tool = PyrightTool(
+        pyright_config_file=HERE / "pyrightconfig.json",
         file_specific_ignores={
             str(HERE / k): v for k, v in FILE_SPECIFIC_IGNORES.items()
         },
-        pyright_config_file=HERE / "pyrightconfig.json",
         error_file="errors_for_pyright_temp.json",
         should_generate_error_file=SHOULD_GENERATE_ERROR_FILE,
         should_delete_error_file=SHOULD_DELETE_ERROR_FILE,
