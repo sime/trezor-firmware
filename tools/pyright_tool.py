@@ -155,6 +155,12 @@ FILE_SPECIFIC_IGNORES = {}
 for file in FILE_SPECIFIC_IGNORES:
     FILE_SPECIFIC_IGNORES[file].sort(key=lambda x: x.substring, reverse=True)
 
+# Allowing for more readable ignore of common problems, with an easy-to-understand alias
+ALIASES = {
+    "awaitable-is-generator": 'Return type of generator function must be "Generator" or "Iterable"',
+    "obscured-by-same-name": "is obscured by a declaration of the same name"
+}
+
 
 class PyrightTool:
     ON_PATTERN: Final = "# pyright: on"
@@ -175,6 +181,7 @@ class PyrightTool:
         pyright_config_file: Union[str, Path],
         *,
         file_specific_ignores: Optional[FileSpecificIgnores] = None,
+        aliases: Optional[Dict[str, str]] = None,
         error_file: Union[str, Path] = "temp_error_file.json",
         should_generate_error_file: bool = True,
         should_delete_error_file: bool = True,
@@ -184,6 +191,7 @@ class PyrightTool:
         self.file_specific_ignores = (
             file_specific_ignores if file_specific_ignores else {}
         )
+        self.aliases = aliases if aliases else {}
         self.error_file = error_file
         self.should_generate_error_file = should_generate_error_file
         self.should_delete_error_file = should_delete_error_file
@@ -497,6 +505,9 @@ class PyrightTool:
         if not statement_substrings[0]:
             return []
 
+        # When finding aliases, replacing them with a real substring:
+        statement_substrings = [self.aliases.get(ss, ss) for ss in statement_substrings]
+
         return [IgnoreStatement(substr) for substr in statement_substrings]
 
     def print_human_readable_error(self, error: Error) -> None:
@@ -527,6 +538,7 @@ if __name__ == "__main__":
         file_specific_ignores={
             str(HERE / k): v for k, v in FILE_SPECIFIC_IGNORES.items()
         },
+        aliases=ALIASES,
         error_file="errors_for_pyright_temp.json",
         should_generate_error_file=SHOULD_GENERATE_ERROR_FILE,
         should_delete_error_file=SHOULD_DELETE_ERROR_FILE,
