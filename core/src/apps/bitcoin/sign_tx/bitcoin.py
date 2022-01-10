@@ -760,7 +760,7 @@ class Bitcoin:
         # The nHashType is the 8 least significant bits of the sighash type.
         # Some coins set the 24 most significant bits of the sighash type to
         # the fork ID value.
-        return self.get_hash_type(txi) & 0xFF  # type: ignore [Expression of type "int" cannot be assigned to return type "SigHashType"]
+        return self.get_hash_type(txi) & 0xFF  # type: ignore [int-into-enum]
 
     def write_tx_input_derived(
         self,

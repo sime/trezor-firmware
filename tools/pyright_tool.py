@@ -163,6 +163,7 @@ for file in FILE_SPECIFIC_IGNORES:
 ALIASES = {
     "awaitable-is-generator": 'Return type of generator function must be "Generator" or "Iterable"',
     "obscured-by-same-name": "is obscured by a declaration of the same name",
+    "int-into-enum": 'Expression of type "int.*" cannot be assigned to return type ".*"',
 }
 
 
@@ -421,7 +422,10 @@ class PyrightTool:
                 for substring_index, ignore_statement in enumerate(
                     ignore.ignore_statements
                 ):
-                    if re.search(ignore_statement.substring, error_message):
+                    # Supporting both text substrings and regex patterns
+                    if ignore_statement.substring in error_message or re.search(
+                        ignore_statement.substring, error_message
+                    ):
                         # Marking this ignore to be used (so we can identify unused ignores)
                         self.all_pyright_ignores[file][ignore_index].ignore_statements[
                             substring_index
