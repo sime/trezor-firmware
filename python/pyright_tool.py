@@ -133,20 +133,12 @@ HERE = Path(__file__).parent.resolve()
 
 # TODO: move into a JSON or other config file
 # Files need to have a relative location to the directory of this file (/python)
-FILE_SPECIFIC_IGNORES = {
-    "tools/helloworld.py": [
-        FileSpecificIgnore(rule="reportMissingParameterType"),
-        FileSpecificIgnore(rule="reportGeneralTypeIssues"),
-        FileSpecificIgnore(
-            substring='Argument of type "Literal[3]" cannot be assigned to parameter "__k" of type "str"'
-        ),
-    ],
-    "tools/firmware-fingerprint.py": [
-        FileSpecificIgnore(
-            substring='Operator "+" not supported for types "Literal[3]" and "Literal['
-        ),
-    ],
-}
+# Example:
+# "tools/helloworld.py": [
+#     FileSpecificIgnore(rule="reportMissingParameterType"),
+#     FileSpecificIgnore(substring="cannot be assigned to parameter"),
+# ],
+FILE_SPECIFIC_IGNORES = {}
 
 # Putting substrings at the beginning of ignore-lists, so they are matched before rules
 # (Not to leave them potentially unused when error would be matched by a rule instead)

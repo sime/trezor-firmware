@@ -21,24 +21,6 @@ from trezorlib.client import get_default_client
 from trezorlib.tools import parse_path
 
 
-def trial_for_pyright(y) -> int:
-    x = {"abc": "def"}
-    x[3]
-
-    return "int"
-
-
-# pyright: off
-
-x + 4
-
-# pyright: on
-
-
-def trial_after_pyright_on(xx):
-    return 4
-
-
 def main() -> None:
     # Use first connected device
     client = get_default_client()
