@@ -157,7 +157,7 @@ for file in FILE_SPECIFIC_IGNORES:
 class PyrightTool:
     ON_PATTERN: Final = "# pyright: on"
     OFF_PATTERN: Final = "# pyright: off"
-    IGNORE_PATTERN: Final = "# type: ignore "
+    IGNORE_PATTERN: Final = "# type: ignore"
     IGNORE_DELIMITER: Final = ";;"
 
     original_pyright_results: PyrightResults
@@ -166,6 +166,7 @@ class PyrightTool:
     pyright_off_ignores: FilePyrightOffIgnores
     real_errors: Errors
     unused_ignores: List[str]
+    inconsistencies: List[str] = []
 
     def __init__(
         self,
@@ -213,10 +214,15 @@ class PyrightTool:
             for unused_ignore in self.unused_ignores:
                 print(unused_ignore)
 
+        if self.inconsistencies:
+            print("\nWARNING: there are inconsistencies!")
+            for inconsistency in self.inconsistencies:
+                print(inconsistency)
+
         if not self.real_errors:
             print("\nSUCCESS: Everything is fine!")
-            if self.unused_ignores:
-                print("But we have unused ignores!")
+            if self.unused_ignores or self.inconsistencies:
+                print("But we have unused ignores or inconsistencies!")
                 sys.exit(2)
             else:
                 sys.exit(0)
@@ -225,8 +231,8 @@ class PyrightTool:
             for error in self.real_errors:
                 self.print_human_readable_error(error)
             print(f"Found {len(self.real_errors)} issues above")
-            if self.unused_ignores:
-                print("And we have unused ignores!")
+            if self.unused_ignores or self.inconsistencies:
+                print("And we have unused ignores or inconsistencies!")
             sys.exit(1)
 
     def get_original_pyright_results(self) -> PyrightResults:
@@ -466,7 +472,12 @@ class PyrightTool:
             for index, line in enumerate(f):
                 if self.IGNORE_PATTERN in line:
                     ignore_statements = self.get_ignore_statements(line)
-                    ignores.append(LineIgnore(index, ignore_statements))
+                    if not ignore_statements:
+                        self.inconsistencies.append(
+                            f"There is an empty 'type: ignore' in {file}:{index+1}"
+                        )
+                    else:
+                        ignores.append(LineIgnore(index, ignore_statements))
 
         return ignores
 
@@ -478,6 +489,11 @@ class PyrightTool:
             .strip(" []\n")
             .split(self.IGNORE_DELIMITER)
         )
+
+        # We should not be using empty "type: ignore" without content in []
+        # Notifying the parent function that we should do something about it
+        if not statement_substrings[0]:
+            return []
 
         return [IgnoreStatement(substr) for substr in statement_substrings]
 
