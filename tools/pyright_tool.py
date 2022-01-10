@@ -7,6 +7,7 @@ Usage:
     - "# type: ignore [<error_substring>]"
         - put it as a comment to the line we want to ignore
         - "# type: ignore [<error1>;;<error2>;;...]" if there are more than one errors on that line
+        - also regex patterns are valid substrings
     - "# pyright: off" / "# pyright: on"
         - all errors in block of code between these marks will be ignored
     - FILE_SPECIFIC_IGNORES
@@ -420,7 +421,7 @@ class PyrightTool:
                 for substring_index, ignore_statement in enumerate(
                     ignore.ignore_statements
                 ):
-                    if ignore_statement.substring in error_message:
+                    if re.search(ignore_statement.substring, error_message):
                         # Marking this ignore to be used (so we can identify unused ignores)
                         self.all_pyright_ignores[file][ignore_index].ignore_statements[
                             substring_index
