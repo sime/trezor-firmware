@@ -12,9 +12,6 @@ Usage:
         - all errors in block of code between these marks will be ignored
     - FILE_SPECIFIC_IGNORES
         - ignore specific rules (defined by pyright) or error substrings in the whole file
-
-TODO FEATURES:
-- error handling for all cases
 """
 
 import argparse
@@ -24,7 +21,7 @@ import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Final, List, Optional, Set, TypedDict, Union
+from typing import Any, Dict, Final, List, Optional, Set, TypedDict, Union
 
 
 class RangeDetail(TypedDict):
@@ -140,6 +137,8 @@ if args.folder:
     # Repository root + the wanted folder.
     # Need to change the os folder to find all the files correctly
     HERE = Path(__file__).parent.parent.resolve() / args.folder
+    if not os.path.isdir(HERE):
+        raise RuntimeError(f"Could not find folder {args.folder} under {HERE}")
     os.chdir(HERE)
 else:
     # Folder of this file
@@ -152,15 +151,11 @@ else:
 #     FileSpecificIgnore(rule="reportMissingParameterType"),
 #     FileSpecificIgnore(substring="cannot be assigned to parameter"),
 # ],
-FILE_SPECIFIC_IGNORES = {}
+FILE_SPECIFIC_IGNORES: FileSpecificIgnores = {}
 
-# Putting substrings at the beginning of ignore-lists, so they are matched before rules
-# (Not to leave them potentially unused when error would be matched by a rule instead)
-for file in FILE_SPECIFIC_IGNORES:
-    FILE_SPECIFIC_IGNORES[file].sort(key=lambda x: x.substring, reverse=True)
 
 # Allowing for more readable ignore of common problems, with an easy-to-understand alias
-ALIASES = {
+ALIASES: Dict[str, str] = {
     "awaitable-is-generator": 'Return type of generator function must be "Generator" or "Iterable"',
     "obscured-by-same-name": "is obscured by a declaration of the same name",
     "int-into-enum": 'Expression of type "int.*" cannot be assigned to return type ".*"',
@@ -204,8 +199,36 @@ class PyrightTool:
 
         self.count_of_ignored_errors = 0
 
+        self.check_input_correctness()
+
+    def check_input_correctness(self) -> None:
+        """Verify the input data structures are correct."""
+        # Checking for correct file_specific_ignores structure
+        for file, ignores in self.file_specific_ignores.items():
+            for ignore in ignores:
+                if not isinstance(ignore, FileSpecificIgnore):
+                    raise RuntimeError(
+                        "All items of file_specific_ignores must be FileSpecificIgnore classes. "
+                        f"Got {ignore} - type {type(ignore)}"
+                    )
+            # Also putting substrings at the beginning of ignore-lists, so they are matched before rules
+            # (Not to leave them potentially unused when error would be matched by a rule instead)
+            self.file_specific_ignores[file].sort(
+                key=lambda x: x.substring, reverse=True
+            )
+
+        # Checking for correct aliases (Dict[str, str] type)
+        for alias, full_substring in self.aliases.items():
+            if not isinstance(alias, str) or not isinstance(full_substring, str):
+                raise RuntimeError(
+                    "All alias keys and values must be strings. "
+                    f"Got {alias} (type {type(alias)}), {full_substring} (type {type(full_substring)}"
+                )
+
     def run(self) -> None:
         """Main function, putting together all logic and evaluating result."""
+        self.pyright_config_data = self.get_and_validate_pyright_config_data()
+
         self.original_pyright_results = self.get_original_pyright_results()
 
         self.all_files_to_check = self.get_all_files_to_check()
@@ -250,6 +273,35 @@ class PyrightTool:
                 print("And we have unused ignores or inconsistencies!")
             sys.exit(1)
 
+    def get_and_validate_pyright_config_data(self) -> Dict[str, Any]:
+        """Verify that pyrightconfig exists and has correct data."""
+        if not os.path.isfile(self.pyright_config_file):
+            raise RuntimeError(
+                f"Pyright config file under {self.pyright_config_file} does not exist! "
+                "Tool relies on its existence, please create it."
+            )
+
+        try:
+            config_data = json.loads(open(self.pyright_config_file, "r").read())
+        except json.decoder.JSONDecodeError as err:
+            raise RuntimeError(
+                f"Pyright config under {self.pyright_config_file} does not contain valid JSON! Err: {err}"
+            ) from None
+
+        # enableTypeIgnoreComments MUST be set to False, otherwise the "type: ignore"s
+        # will affect the original pyright result - and we need it to grab all the errors
+        # so we can handle them on our own
+        if (
+            "enableTypeIgnoreComments" not in config_data
+            or config_data["enableTypeIgnoreComments"]
+        ):
+            raise RuntimeError(
+                f"Please set '\"enableTypeIgnoreComments\": true' in {self.pyright_config_file}. "
+                "Otherwise the tool will not work as expected."
+            )
+
+        return config_data
+
     def get_original_pyright_results(self) -> PyrightResults:
         """Extract all information from pyright.
 
@@ -257,17 +309,40 @@ class PyrightTool:
         nice JSON format with `generalDiagnostics` array storing
         all the errors - schema described in PyrightResults
         """
-        # TODO: probably make this cleaner and less hacky
         if self.should_generate_error_file:
-            os.system(
-                f"pyright -p {self.pyright_config_file} --outputjson > {self.error_file}"
-            )
-            print(80 * "*")
+            cmd = f"pyright -p {self.pyright_config_file} --outputjson > {self.error_file}"
+            exit_code = os.system(cmd)
+            # Checking if there was no non-type-checking error when running the above command
+            # From the way `os.system` returns exit codes:
+            # - 0 corresponds to exit code 0 (all fine, no type-checking issues in pyright)
+            # - 256 corresponds to exit code 1 (pyright has found some type-checking issues)
+            # All other exit codes mean something non-type-related got wrong (or pyright did not found)
+            # https://github.com/microsoft/pyright/blob/main/docs/command-line.md#pyright-exit-codes
+            if exit_code not in [0, 256]:
+                raise RuntimeError(
+                    f"Running '{cmd}' produced a non-expected exit code (see output above)."
+                )
 
-        pyright_results: PyrightResults = json.loads(open(self.error_file, "r").read())
+            if not os.path.isfile(self.error_file):
+                raise RuntimeError(
+                    f"Pyright error file under {self.error_file} was not generated by running '{cmd}'."
+                )
+
+        try:
+            pyright_results: PyrightResults = json.loads(
+                open(self.error_file, "r").read()
+            )
+        except FileNotFoundError:
+            raise RuntimeError(
+                f"Error file under {self.error_file} does not exist!"
+            ) from None
+        except json.decoder.JSONDecodeError as err:
+            raise RuntimeError(
+                f"Error file under {self.error_file} does not contain valid JSON! Err: {err}"
+            ) from None
 
         if self.should_delete_error_file:
-            os.system(f"rm {self.error_file}")
+            os.remove(self.error_file)
 
         return pyright_results
 
@@ -319,19 +394,18 @@ class PyrightTool:
     def get_all_files_to_check(self) -> Set[str]:
         """Get all files to be analyzed by pyright, based on its config."""
         all_files: Set[str] = set()
-        config_data = json.loads(open(self.pyright_config_file, "r").read())
 
-        if "include" in config_data:
-            for folder_or_file in config_data["include"]:
+        if "include" in self.pyright_config_data:
+            for folder_or_file in self.pyright_config_data["include"]:
                 for file in self.get_all_py_files_recursively(folder_or_file):
                     all_files.add(file)
         else:
-            # "include" is missing, we should analyze all files in root dir
+            # "include" is missing, we should analyze all files in current dir
             for file in self.get_all_py_files_recursively("."):
                 all_files.add(file)
 
-        if "exclude" in config_data:
-            for folder_or_file in config_data["exclude"]:
+        if "exclude" in self.pyright_config_data:
+            for folder_or_file in self.pyright_config_data["exclude"]:
                 for file in self.get_all_py_files_recursively(folder_or_file):
                     if file in all_files:
                         all_files.remove(file)
