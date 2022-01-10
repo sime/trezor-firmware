@@ -135,8 +135,10 @@ SHOULD_DELETE_ERROR_FILE = should_delete_error_file
 SHOULD_LOG = args.log
 
 if args.folder:
-    # Repository root + the wanted folder
+    # Repository root + the wanted folder.
+    # Need to change the os folder to find all the files correctly
     HERE = Path(__file__).parent.parent.resolve() / args.folder
+    os.chdir(HERE)
 else:
     # Folder of this file
     HERE = Path(__file__).parent.resolve()
@@ -254,7 +256,7 @@ class PyrightTool:
         """
         # TODO: probably make this cleaner and less hacky
         if self.should_generate_error_file:
-            os.system(f"pyright --outputjson > {self.error_file}")
+            os.system(f"pyright -p {self.pyright_config_file} --outputjson > {self.error_file}")
             print(80 * "*")
 
         pyright_results: PyrightResults = json.loads(open(self.error_file, "r").read())
