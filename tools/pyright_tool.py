@@ -19,6 +19,7 @@ TODO FEATURES:
 import argparse
 import json
 import os
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -160,7 +161,7 @@ for file in FILE_SPECIFIC_IGNORES:
 # Allowing for more readable ignore of common problems, with an easy-to-understand alias
 ALIASES = {
     "awaitable-is-generator": 'Return type of generator function must be "Generator" or "Iterable"',
-    "obscured-by-same-name": "is obscured by a declaration of the same name"
+    "obscured-by-same-name": "is obscured by a declaration of the same name",
 }
 
 
@@ -256,7 +257,9 @@ class PyrightTool:
         """
         # TODO: probably make this cleaner and less hacky
         if self.should_generate_error_file:
-            os.system(f"pyright -p {self.pyright_config_file} --outputjson > {self.error_file}")
+            os.system(
+                f"pyright -p {self.pyright_config_file} --outputjson > {self.error_file}"
+            )
             print(80 * "*")
 
         pyright_results: PyrightResults = json.loads(open(self.error_file, "r").read())
@@ -495,19 +498,19 @@ class PyrightTool:
 
     def get_ignore_statements(self, line: str) -> List[IgnoreStatement]:
         """Extract error substrings to be ignored from a certain line."""
-        # TODO: could make some regex instead
-        statement_substrings = (
-            line.split(self.IGNORE_PATTERN)[1]
-            .strip(" []\n")
-            .split(self.IGNORE_DELIMITER)
-        )
+        # Extracting content of [error_substring(s)] after the ignore comment
+        ignore_part = line.split(self.IGNORE_PATTERN, 2)[1]
+        ignore_content = re.search(r"\[(.*)\]", ignore_part)
 
         # We should not be using empty "type: ignore" without content in []
         # Notifying the parent function that we should do something about it
-        if not statement_substrings[0]:
+        if not ignore_content:
             return []
 
-        # When finding aliases, replacing them with a real substring:
+        # There might be more than one substring
+        statement_substrings = ignore_content.group(1).split(self.IGNORE_DELIMITER)
+
+        # When finding aliases, replacing them with a real substring
         statement_substrings = [self.aliases.get(ss, ss) for ss in statement_substrings]
 
         return [IgnoreStatement(substr) for substr in statement_substrings]
