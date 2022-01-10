@@ -63,4 +63,4 @@ test:
 	pytest tests
 
 pyright:
-	python pyright_tool.py
+	python ./../tools/pyright_tool.py --folder python

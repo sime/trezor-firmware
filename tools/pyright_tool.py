@@ -111,6 +111,11 @@ parser.add_argument(
     help="Reusing existing error file and not deleting it",
 )
 parser.add_argument("--log", action="store_true", help="Log details")
+parser.add_argument(
+    "--folder",
+    help="Folder which to test, relative to the repository root. When empty, taking the folder of this file.",
+    default="",
+)
 args = parser.parse_args()
 
 if args.dev:
@@ -129,7 +134,12 @@ SHOULD_GENERATE_ERROR_FILE = should_generate_error_file
 SHOULD_DELETE_ERROR_FILE = should_delete_error_file
 SHOULD_LOG = args.log
 
-HERE = Path(__file__).parent.resolve()
+if args.folder:
+    # Repository root + the wanted folder
+    HERE = Path(__file__).parent.parent.resolve() / args.folder
+else:
+    # Folder of this file
+    HERE = Path(__file__).parent.resolve()
 
 # TODO: move into a JSON or other config file
 # Files need to have a relative location to the directory of this file (/python)
