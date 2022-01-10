@@ -4,9 +4,9 @@ ignore of specific error messages.
 
 Usage:
 - there are multiple ways how to ignore/silence a pyright error:
-    - "# pyright: ignore [<error_substring>]"
+    - "# type: ignore [<error_substring>]"
         - put it as a comment to the line we want to ignore
-        - "# pyright: ignore [<error1>;;<error2>;;...]" if there are more than one errors on that line
+        - "# type: ignore [<error1>;;<error2>;;...]" if there are more than one errors on that line
     - "# pyright: off" / "# pyright: on"
         - all errors in block of code between these marks will be ignored
     - FILE_SPECIFIC_IGNORES
@@ -14,10 +14,6 @@ Usage:
 
 TODO FEATURES:
 - error handling for all cases
-
-ISSUES:
-- "# pyright: ignore" is not understood by `black` as a type comment, so it is being affected
-    and restyled - we might have to use "# type: ignore" instead
 """
 
 import argparse
@@ -161,7 +157,7 @@ for file in FILE_SPECIFIC_IGNORES:
 class PyrightTool:
     ON_PATTERN: Final = "# pyright: on"
     OFF_PATTERN: Final = "# pyright: off"
-    IGNORE_PATTERN: Final = "# pyright: ignore "
+    IGNORE_PATTERN: Final = "# type: ignore "
     IGNORE_DELIMITER: Final = ";;"
 
     original_pyright_results: PyrightResults
@@ -256,7 +252,7 @@ class PyrightTool:
         """Analyze all pyright errors and discard all that should be ignored.
 
         Ignores can be different:
-        - as per "# pyright: ignore [<error_substring>]" comment
+        - as per "# type: ignore [<error_substring>]" comment
         - as per "file_specific_ignores"
         - as per "# pyright: off" mark
         """
@@ -273,7 +269,7 @@ class PyrightTool:
             error_message = error["message"]
             line_no = error["range"]["start"]["line"]
 
-            # Checking for "# pyright: ignore [<error_substring>]" comment
+            # Checking for "# type: ignore [<error_substring>]" comment
             if self.should_ignore_per_inline_substring(
                 file_path, error_message, line_no
             ):
@@ -356,7 +352,7 @@ class PyrightTool:
         """Evaluate if there are no ignores not matched by pyright errors."""
         unused_ignores: List[str] = []
 
-        # Pyright: ignore
+        # type: ignore
         for file, file_ignores in self.all_pyright_ignores.items():
             for line_ignore in file_ignores:
                 for ignore_statement in line_ignore.ignore_statements:
