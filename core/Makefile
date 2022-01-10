@@ -112,7 +112,10 @@ mypy: ## deprecated; use "make typecheck"
 	make typecheck
 
 typecheck:
-	pyright
+	make pyright
+
+pyright:
+	python ./../tools/pyright_tool.py --folder core
 
 clippy:
 	cd embed/rust ; cargo clippy
