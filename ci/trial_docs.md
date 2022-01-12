@@ -123,7 +123,7 @@ Missing description
 
 ### [core device ui test](https://github.com/trezor/trezor-firmware/blob/master/ci/test.yml#L34)
 UI tests for Core. See artifacts for a comprehensive report of UI.
-See [tests/ui-tests](../tests/ui-tests.md) for more info.
+See [tests/ui-tests](../docs/tests/ui-tests.md) for more info.
 
 ### [core device test](https://github.com/trezor/trezor-firmware/blob/master/ci/test.yml#L59)
 Missing description
@@ -177,7 +177,7 @@ Missing description
 ## [ci/test-hw.yml](../ci/test-hw.yml)
 
 ### [hardware core regular device test](https://github.com/trezor/trezor-firmware/blob/master/ci/test-hw.yml#L25)
-[Device tests](../tests/device-tests.md) that run against an actual physical Trezor T.
+[Device tests](../docs/tests/device-tests.md) that run against an actual physical Trezor T.
 The device needs to have special bootloader, found in `core/embed/bootloader_ci`, that
 makes it possible to flash firmware without confirmation on the touchscreen.
 
@@ -198,7 +198,7 @@ Also device tests on physical Trezor T but with Bitcoin-only firmware.
 Missing description
 
 ### [hardware legacy regular device test](https://github.com/trezor/trezor-firmware/blob/master/ci/test-hw.yml#L113)
-[Device tests](../tests/device-tests.md) executed on physical Trezor 1.
+[Device tests](../docs/tests/device-tests.md) executed on physical Trezor 1.
 This works thanks to [tpmb](https://github.com/mmahut/tpmb), which is a small arduino
 device capable of pushing an actual buttons on the device.
 

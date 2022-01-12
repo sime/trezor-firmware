@@ -17,9 +17,13 @@ DOC_FILE = "ci/trial_docs.md"
 
 # Loading all the CI files which are used in Gitlab
 with open(GITLAB_CI_FILE, "r") as f:
-    content = yaml.safe_load(f)
-    FILES = content["include"]
-    print("FILES", FILES)
+    gitlab_file_content = yaml.safe_load(f)
+
+FILES = gitlab_file_content["include"]
+print("FILES", FILES)
+for file in FILES:
+    if not os.path.isfile(file):
+        raise RuntimeError(f"File {file} does not exist!")
 
 # Some keywords that are not job definitions and we should not care about them
 NOT_JOBS = [
@@ -32,6 +36,7 @@ ALL_JOBS = OrderedDict()
 
 # TODO: could read sections inside the file with some overall description of below jobs
 # TODO: could create a --test argument checking that the docs are up-to-date
+# TODO: could make a class structure
 
 
 def get_overall_description_from_file(file: str) -> List[str]:

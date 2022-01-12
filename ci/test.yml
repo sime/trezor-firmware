@@ -30,7 +30,7 @@ core unit test t1:
     - nix-shell --run "poetry run make -C core test_rust | ts -s"
 
 # UI tests for Core. See artifacts for a comprehensive report of UI.
-# See [tests/ui-tests](../tests/ui-tests.md) for more info.
+# See [tests/ui-tests](../docs/tests/ui-tests.md) for more info.
 core device ui test:
   stage: test
   <<: *gitlab_caching
