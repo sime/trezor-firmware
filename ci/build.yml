@@ -1,3 +1,5 @@
+# All builds are published as artifacts so they can be downloaded and used.
+
 image: registry.gitlab.com/satoshilabs/trezor/trezor-firmware/trezor-firmware-env.nix
 
 # Caching
@@ -13,6 +15,8 @@ variables:
 
 # Core
 
+# Build of Core into firmware. Regular version.
+# **Are you looking for Trezor T firmware build? This is most likely it.**
 core fw regular build:
   stage: build
   <<: *gitlab_caching
@@ -31,6 +35,9 @@ core fw regular build:
       - trezor-fw-regular-*.*.*-$CI_COMMIT_SHORT_SHA.bin
     expire_in: 1 week
 
+# Build of Core into firmware with enabled _debug_ mode. In debug mode you can
+# upload mnemonic seed, use debug link etc. which enables device tests. Storage
+# on the device gets wiped on every start in this firmware.
 core fw regular debug build:
   stage: build
   <<: *gitlab_caching
@@ -44,6 +51,7 @@ core fw regular debug build:
       - trezor-fw-regular-debug-*.*.*-$CI_COMMIT_SHORT_SHA.bin
     expire_in: 1 week
 
+# Build of Core into firmware. Bitcoin-only version.
 core fw btconly build:
   stage: build
   <<: *gitlab_caching
@@ -100,6 +108,8 @@ core fw btconly t1 build:
       - trezor-fw-btconly-t1-*.*.*-$CI_COMMIT_SHORT_SHA.bin
     expire_in: 1 week
 
+# Non-frozen emulator build. This means you still need Python files
+# present which get interpreted.
 core unix regular build:
   stage: build
   <<: *gitlab_caching
@@ -112,6 +122,9 @@ core unix regular build:
       - core/build/unix  # most of it needed by test_rust
     expire_in: 1 week
 
+# Build of Core into UNIX emulator. Something you can run on your laptop.
+# Frozen version. That means you do not need any other files to run it,
+# it is just a single binary file that you can execute directly.
 core unix frozen regular build:
   stage: build
   <<: *gitlab_caching
@@ -124,6 +137,10 @@ core unix frozen regular build:
       - core/build/unix/trezor-emu-core
     expire_in: 1 week
 
+# Build of Core into UNIX emulator. Something you can run on your laptop.
+# Frozen version. That means you do not need any other files to run it,
+# it is just a single binary file that you can execute directly.
+# Debug mode enabled, Bitcoin-only version.
 core unix frozen btconly debug build:
   stage: build
   <<: *gitlab_caching
@@ -140,6 +157,10 @@ core unix frozen btconly debug build:
       - core/build/unix/trezor-emu-core-bitcoinonly
     expire_in: 1 week
 
+# Build of Core into UNIX emulator. Something you can run on your laptop.
+# Frozen version. That means you do not need any other files to run it,
+# it is just a single binary file that you can execute directly.
+# **Are you looking for a Trezor T emulator? This is most likely it.**
 core unix frozen debug build:
   stage: build
   <<: *gitlab_caching
@@ -213,6 +234,7 @@ core macos frozen regular build:
 
 # Crypto
 
+# Build of our cryptographic library, which is then incorporated into the other builds.
 crypto build:
   stage: build
   <<: *gitlab_caching
@@ -345,6 +367,8 @@ legacy emu regular debug build arm:
   tags:
     - docker_darwin_arm
 
+# Build of Legacy into UNIX emulator. Use keyboard arrows to emulate button presses.
+# Bitcoin-only version.
 legacy emu btconly debug build:
   stage: build
   <<: *gitlab_caching
