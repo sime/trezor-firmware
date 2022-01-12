@@ -15,19 +15,23 @@ os.chdir(ROOT_DIR)
 GITLAB_CI_FILE = ".gitlab-ci.yml"
 DOC_FILE = "ci/trial_docs.md"
 
+# Loading all the CI files which are used in Gitlab
 with open(GITLAB_CI_FILE, "r") as f:
     content = yaml.safe_load(f)
     FILES = content["include"]
     print("FILES", FILES)
 
+# Some keywords that are not job definitions and we should not care about them
 NOT_JOBS = [
     "variables:",
     "image:",
 ]
+
 ALL_JOBS = OrderedDict()
 
 
 # TODO: could read sections inside the file with some overall description of below jobs
+# TODO: could create a --test argument checking that the docs are up-to-date
 
 
 def get_overall_description_from_file(file: str) -> List[str]:
@@ -36,7 +40,7 @@ def get_overall_description_from_file(file: str) -> List[str]:
     with open(file, "r") as f:
         for line in f:
             if line.startswith("#"):
-                # Deleting the comment from the beginning
+                # Taking just the text - no hashes, no whitespace
                 description_lines.append(line.strip("# \n"))
             else:
                 break
@@ -45,35 +49,25 @@ def get_overall_description_from_file(file: str) -> List[str]:
 
 
 def get_jobs_from_file(file: str) -> Dict[str, List[str]]:
-    all_jobs = OrderedDict()
-    job_name = ""  # indicates we identified a job and we want to read the comments belonging to it
-    job_description_buffer = []
+    all_jobs: Dict[str, List[str]] = OrderedDict()
 
-    # Looping through lines in reversed order, first identifying the job definition
-    # and then loading all the comments above it.
+    # Taking all the comments above a non-indented non-comment, which is
+    # always a job definition, unless defined in NOT_JOBS
     with open(file, "r") as f:
-        for line in reversed(f.readlines()):
-            if job_name:
-                # Search for comments
-                # If comment not found, save all what we got
-                if line.startswith("#"):
-                    # Deleting the comment from the beginning
-                    job_description_buffer.append(line.strip("# \n"))
-                else:
-                    # Save and move on to another job
-                    # All the description lines need to be reversed
-                    all_jobs[job_name] = list(reversed(job_description_buffer))
-                    job_description_buffer = []
-                    job_name = ""
+        comment_buffer = []
+        for line in f:
+            if line.startswith("#"):
+                # Taking just the text - no hashes, no whitespace
+                comment_buffer.append(line.strip("# \n"))
             else:
-                # Looking for a non-indented line, which signals job definition
                 if re.search(r"\A\w", line) and not any(
                     [line.startswith(not_job) for not_job in NOT_JOBS]
                 ):
                     job_name = line.rstrip(":\n")
+                    all_jobs[job_name] = comment_buffer
+                comment_buffer = []
 
-    # To maintain the real order, we need to reverse the jobs, as they were read from the end
-    return OrderedDict(reversed(all_jobs.items()))
+        return all_jobs
 
 
 def save_docs_into_file() -> None:
