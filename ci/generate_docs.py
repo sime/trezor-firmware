@@ -2,7 +2,7 @@ import os
 import re
 from collections import OrderedDict
 from pathlib import Path
-from typing import Dict, List
+from typing import Any, Dict, List
 
 import yaml
 
@@ -48,14 +48,14 @@ def get_overall_description_from_file(file: str) -> List[str]:
     return description_lines
 
 
-def get_jobs_from_file(file: str) -> Dict[str, List[str]]:
-    all_jobs: Dict[str, List[str]] = OrderedDict()
+def get_jobs_from_file(file: str) -> Dict[str, Dict[str, Any]]:
+    all_jobs: Dict[str, Dict[str, Any]] = OrderedDict()
 
     # Taking all the comments above a non-indented non-comment, which is
     # always a job definition, unless defined in NOT_JOBS
     with open(file, "r") as f:
         comment_buffer = []
-        for line in f:
+        for index, line in enumerate(f):
             if line.startswith("#"):
                 # Taking just the text - no hashes, no whitespace
                 comment_buffer.append(line.strip("# \n"))
@@ -64,17 +64,20 @@ def get_jobs_from_file(file: str) -> Dict[str, List[str]]:
                     [line.startswith(not_job) for not_job in NOT_JOBS]
                 ):
                     job_name = line.rstrip(":\n")
-                    all_jobs[job_name] = comment_buffer
+                    all_jobs[job_name] = {
+                        "description": comment_buffer,
+                        "line_no": index + 1,
+                    }
                 comment_buffer = []
 
-        return all_jobs
+    return all_jobs
 
 
 def save_docs_into_file() -> None:
     with open(DOC_FILE, "w") as doc_file:
         for file, file_info in ALL_JOBS.items():
-            # TODO: we could even create a link pointing to this file
-            doc_file.write(f"## {file}\n\n")
+            # Generating header with a link to the file
+            doc_file.write(f"## [{file}](../{file})\n\n")
 
             # TODO: are we alright using this python >= 3.8 feature (walrus operator)?
             if description := file_info["overall_description"]:
@@ -82,14 +85,21 @@ def save_docs_into_file() -> None:
                     doc_file.write(f"{line}\n")
                 doc_file.write("\n")
 
-            for job_name, job_desc in file_info["jobs"].items():
-                doc_file.write(f"### {job_name}\n")
-                if not job_desc:
+            for job_name, job_info in file_info["jobs"].items():
+                # Generating smaller header with link to the exact line of
+                # this job in the master branch
+                # (will work properly only after merging changes to master)
+                github_link = "https://github.com/trezor/trezor-firmware/blob/master"
+                doc_file.write(
+                    f"### [{job_name}]({github_link}/{file}#L{job_info['line_no']})\n"
+                )
+                if not job_info["description"]:
                     doc_file.write("Missing description\n")
-                for line in job_desc:
+                for line in job_info["description"]:
                     doc_file.write(f"{line}\n")
                 doc_file.write("\n")
 
+            doc_file.write("---")
             doc_file.write("\n")
 
 
