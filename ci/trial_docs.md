@@ -5,7 +5,7 @@ Latest CI pipeline of master branch can be seen at [https://gitlab.com/satoshila
 
 Connected with creating the testing image for CI
 
-Consists of 1 job below
+Consists of 1 job below.
 - ### [environment](https://github.com/trezor/trezor-firmware/blob/master/ci/environment.yml#L7)
 Environment job builds the `ci/Dockerfile` and pushes the built docker image
 into our GitLab registry. Since modifications of this Dockerfile are very rare
@@ -15,34 +15,40 @@ Almost all CI jobs run inside this docker image.
 ---
 ## PREBUILD stage - [file](../ci/prebuild.yml)
 
-Consists of 7 jobs below
-- ### [style prebuild](https://github.com/trezor/trezor-firmware/blob/master/ci/prebuild.yml#L10)
-Missing description
+Static checks on the code.
 
-- ### [common prebuild](https://github.com/trezor/trezor-firmware/blob/master/ci/prebuild.yml#L18)
-Missing description
+Consists of 7 jobs below.
+- ### [style prebuild](https://github.com/trezor/trezor-firmware/blob/master/ci/prebuild.yml#L16)
+Check the code for style correctness and perform some static code analysis.
+Biggest part is the python one - using `flake8`, `isort`, `black`, `pylint` and `pyright`,
+also checking Rust files by `rustftm` and C files by `clang-format`.
+Changelogs formats are checked
 
-- ### [gen prebuild](https://github.com/trezor/trezor-firmware/blob/master/ci/prebuild.yml#L24)
-Missing description
+- ### [common prebuild](https://github.com/trezor/trezor-firmware/blob/master/ci/prebuild.yml#L25)
+Check validity of coin definitions and protobuf files
 
-- ### [editor prebuild](https://github.com/trezor/trezor-firmware/blob/master/ci/prebuild.yml#L30)
-Missing description
+- ### [gen prebuild](https://github.com/trezor/trezor-firmware/blob/master/ci/prebuild.yml#L32)
+Check validity of auto-generated files
 
-- ### [yaml prebuild](https://github.com/trezor/trezor-firmware/blob/master/ci/prebuild.yml#L36)
-Missing description
+- ### [editor prebuild](https://github.com/trezor/trezor-firmware/blob/master/ci/prebuild.yml#L39)
+Checking format of .editorconfig files
 
-- ### [release commit messages prebuild](https://github.com/trezor/trezor-firmware/blob/master/ci/prebuild.yml#L42)
-Missing description
+- ### [yaml prebuild](https://github.com/trezor/trezor-firmware/blob/master/ci/prebuild.yml#L46)
+All .yml/.yaml files are checked for syntax validity and other correctness
 
-- ### [changelog prebuild](https://github.com/trezor/trezor-firmware/blob/master/ci/prebuild.yml#L57)
-Missing description
+- ### [release commit messages prebuild](https://github.com/trezor/trezor-firmware/blob/master/ci/prebuild.yml#L53)
+Checking the format of release commit messages
+
+- ### [changelog prebuild](https://github.com/trezor/trezor-firmware/blob/master/ci/prebuild.yml#L70)
+Verifying that all commits changing some functionality have a changelog entry
+or contain `[no changelog]` in the commit message
 
 ---
 ## BUILD stage - [file](../ci/build.yml)
 
 All builds are published as artifacts so they can be downloaded and used.
 
-Consists of 20 jobs below
+Consists of 20 jobs below.
 - ### [core fw regular build](https://github.com/trezor/trezor-firmware/blob/master/ci/build.yml#L20)
 Build of Core into firmware. Regular version.
 **Are you looking for Trezor T firmware build? This is most likely it.**
@@ -121,7 +127,7 @@ Bitcoin-only version.
 ---
 ## TEST stage - [file](../ci/test.yml)
 
-Consists of 19 jobs below
+Consists of 19 jobs below.
 - ### [core unit test](https://github.com/trezor/trezor-firmware/blob/master/ci/test.yml#L12)
 Missing description
 
@@ -183,7 +189,7 @@ Missing description
 ---
 ## TEST-HW stage - [file](../ci/test-hw.yml)
 
-Consists of 5 jobs below
+Consists of 5 jobs below.
 - ### [hardware core regular device test](https://github.com/trezor/trezor-firmware/blob/master/ci/test-hw.yml#L25)
 [Device tests](../docs/tests/device-tests.md) that run against an actual physical Trezor T.
 The device needs to have special bootloader, found in `core/embed/bootloader_ci`, that
@@ -216,7 +222,7 @@ Also device tests on physical Trezor 1 but with Bitcoin-only firmware.
 ---
 ## POSTTEST stage - [file](../ci/posttest.yml)
 
-Consists of 2 jobs below
+Consists of 2 jobs below.
 - ### [core unix coverage posttest](https://github.com/trezor/trezor-firmware/blob/master/ci/posttest.yml#L10)
 Missing description
 
@@ -226,7 +232,7 @@ Missing description
 ---
 ## DEPLOY stage - [file](../ci/deploy.yml)
 
-Consists of 11 jobs below
+Consists of 11 jobs below.
 - ### [release core fw regular deploy](https://github.com/trezor/trezor-firmware/blob/master/ci/deploy.yml#L5)
 Missing description
 

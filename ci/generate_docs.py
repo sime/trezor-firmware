@@ -11,6 +11,8 @@ import yaml
 
 # TODO: could read sections inside the file with some overall description of below jobs
 # TODO: could add something like "Generated automatically, do not edit by hand" into the README
+# TODO: when CI jobs are calling some make target, we could make a comment in
+#   that Makefile and take the text from there (so that Makefiles are documented as well)
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -39,7 +41,6 @@ class DocsGenerator:
         self.ALL_JOBS = OrderedDict()
 
         self.FILES = self.get_all_ci_files()
-        print("FILES", self.FILES)
 
     def generate_docs(self) -> None:
         """Whole pipeline of getting and saving the CI information."""
@@ -64,8 +65,11 @@ class DocsGenerator:
 
         try:
             self.generate_docs()
-            if not filecmp.cmp(already_filled_doc_file, self.DOC_FILE):
-                print("The content of CI .yml files does not correspond to README file")
+            if filecmp.cmp(already_filled_doc_file, self.DOC_FILE):
+                print("SUCCESS: Documentation is up-to-date!")
+                sys.exit(0)
+            else:
+                print("FAIL: Documentation is not up-to-date with CI .yml files!")
                 sys.exit(1)
         finally:
             os.remove(self.DOC_FILE)
@@ -154,7 +158,7 @@ class DocsGenerator:
                     doc_file.write("\n")
 
                 job_amount = f"{len(file_info['jobs'])} job{'s' if len(file_info['jobs']) > 1 else ''}"
-                doc_file.write(f"Consists of {job_amount} below\n")
+                doc_file.write(f"Consists of {job_amount} below.\n")
 
                 for job_name, job_info in file_info["jobs"].items():
                     # Generating smaller header with link to the exact line of
