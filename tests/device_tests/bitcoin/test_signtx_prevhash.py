@@ -8,8 +8,8 @@ from trezorlib.exceptions import TrezorFailure
 
 from ...tx_cache import TxCache
 
-TXHASH_157041 = bytes.fromhex(
-    "1570416eb4302cf52979afd5e6909e37d8fdd874301f7cc87e547e509cb1caa6"
+TXHASH_350eeb = bytes.fromhex(
+    "350eebc1012ce2339b71b5fca317a0d174abc3a633684bc65a71845deb596539"
 )
 
 
@@ -100,14 +100,14 @@ def test_invalid_prev_hash_attack(client, prev_hash):
     # prepare input with a valid prev-hash
     inp1 = messages.TxInputType(
         address_n=tools.parse_path("m/44h/0h/0h/0/0"),
-        amount=100000000,
-        prev_hash=TXHASH_157041,
+        amount=100000,
+        prev_hash=TXHASH_350eeb,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDP2SHWITNESS,
     )
     out1 = messages.TxOutputType(
         address="1MJ2tj2ThBE62zXbBYA5ZaN3fdve5CPAz1",
-        amount=100000000 - 10000,
+        amount=100000 - 10000,
         script_type=messages.OutputScriptType.PAYTOADDRESS,
     )
 
@@ -140,7 +140,7 @@ def test_invalid_prev_hash_attack(client, prev_hash):
 @with_bad_prevhashes
 def test_invalid_prev_hash_in_prevtx(client, prev_hash):
     cache = TxCache("Bitcoin")
-    prev_tx = cache[TXHASH_157041]
+    prev_tx = cache[TXHASH_350eeb]
 
     # smoke check: replace prev_hash with all zeros, reserialize and hash, try to sign
     prev_tx.inputs[0].prev_hash = b"\x00" * 32
@@ -148,13 +148,13 @@ def test_invalid_prev_hash_in_prevtx(client, prev_hash):
 
     inp0 = messages.TxInputType(
         address_n=tools.parse_path("m/44h/0h/0h/0/0"),
-        amount=100000000,
+        amount=100000,
         prev_hash=tx_hash,
         prev_index=0,
     )
     out1 = messages.TxOutputType(
         address="1MJ2tj2ThBE62zXbBYA5ZaN3fdve5CPAz1",
-        amount=99000000,
+        amount=100000 - 10000,
         script_type=messages.OutputScriptType.PAYTOADDRESS,
     )
     btc.sign_tx(client, "Bitcoin", [inp0], [out1], prev_txes={tx_hash: prev_tx})
