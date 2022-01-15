@@ -110,6 +110,10 @@ class DocsGenerator:
         """Extract all jobs and their details from a certain file."""
         all_jobs: Dict[str, Dict[str, Any]] = OrderedDict()
 
+        # Getting the parsed content of the file, so we can get the script array
+        with open(file, "r") as f:
+            gitlab_file_content = yaml.safe_load(f)
+
         # Taking all the comments above a non-indented non-comment, which is
         # always a job definition, unless defined in NOT_JOBS
         with open(file, "r") as f:
@@ -126,6 +130,7 @@ class DocsGenerator:
                         all_jobs[job_name] = {
                             "description": comment_buffer,
                             "line_no": index + 1,
+                            "script": gitlab_file_content[job_name]["script"],
                         }
                     comment_buffer = []
 
@@ -158,7 +163,7 @@ class DocsGenerator:
                     doc_file.write("\n")
 
                 job_amount = f"{len(file_info['jobs'])} job{'s' if len(file_info['jobs']) > 1 else ''}"
-                doc_file.write(f"Consists of {job_amount} below.\n")
+                doc_file.write(f"Consists of **{job_amount}** below:\n")
 
                 for job_name, job_info in file_info["jobs"].items():
                     # Generating smaller header with link to the exact line of
@@ -170,6 +175,15 @@ class DocsGenerator:
                         doc_file.write("Missing description\n")
                     for line in job_info["description"]:
                         doc_file.write(f"{line}\n")
+
+                    # Code block for the whole script
+                    # TODO: for longer scripts, we could make a collapsible section
+                    # https://gist.github.com/pierrejoubert73/902cc94d79424356a8d20be2b382e1ab
+                    doc_file.write("```sh\n")
+                    for line in job_info["script"]:
+                        doc_file.write(f"{line}\n")
+                    doc_file.write("```")
+
                     doc_file.write("\n")
 
                 doc_file.write("---")

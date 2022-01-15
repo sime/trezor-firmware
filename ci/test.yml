@@ -1,3 +1,5 @@
+# All the tests run test cases on the freshly built emulators from the previous `BUILD` stage.
+
 image: registry.gitlab.com/satoshilabs/trezor/trezor-firmware/trezor-firmware-env.nix
 
 # Caching
@@ -9,6 +11,7 @@ image: registry.gitlab.com/satoshilabs/trezor/trezor-firmware/trezor-firmware-en
 
 # Core
 
+# Python and rust unit tests, checking TT functionality.
 core unit test:
   stage: test
   <<: *gitlab_caching
@@ -29,8 +32,10 @@ core unit test t1:
   script:
     - nix-shell --run "poetry run make -C core test_rust | ts -s"
 
-# UI tests for Core. See artifacts for a comprehensive report of UI.
-# See [tests/ui-tests](../docs/tests/ui-tests.md) for more info.
+# UI tests for Core. Running device tests and also comparing screens
+# with the expected UI result.
+# See artifacts for a comprehensive report of UI.
+# See [docs/tests/ui-tests](../docs/tests/ui-tests.md) for more info.
 core device ui test:
   stage: test
   <<: *gitlab_caching
@@ -56,6 +61,8 @@ core device ui test:
     reports:
       junit: tests/junit.xml
 
+# Device tests for Core.
+# See [docs/tests/device-tests](../docs/tests/device-tests.md) for more info.
 core device test:
   stage: test
   <<: *gitlab_caching
@@ -77,6 +84,7 @@ core device test:
     reports:
       junit: tests/junit.xml
 
+# Device tests excluding altcoins, only for BTC.
 core btconly device test:
   stage: test
   <<: *gitlab_caching
@@ -97,6 +105,7 @@ core btconly device test:
     reports:
       junit: tests/junit.xml
 
+# Monero tests.
 core monero test:
   stage: test
   <<: *gitlab_caching
@@ -116,6 +125,7 @@ core monero test:
     expire_in: 1 week
     when: always
 
+# Tests for U2F and HID.
 core u2f test:
   stage: test
   <<: *gitlab_caching
@@ -135,6 +145,7 @@ core u2f test:
     expire_in: 1 week
     when: always
 
+# FIDO2 device tests.
 core fido2 test:
   stage: test
   <<: *gitlab_caching
@@ -158,6 +169,8 @@ core fido2 test:
       junit: tests/junit.xml
     when: always
 
+# Click tests.
+# See [docs/tests/click-tests](../docs/tests/click-tests.md) for more info.
 core click test:
   stage: test
   <<: *gitlab_caching
@@ -175,6 +188,8 @@ core click test:
     expire_in: 1 week
     when: always
 
+# Upgrade tests.
+# See [docs/tests/upgrade-tests](../docs/tests/upgrade-tests.md) for more info.
 core upgrade test:
   stage: test
   <<: *gitlab_caching
@@ -194,6 +209,7 @@ core upgrade test:
     expire_in: 1 week
     when: always
 
+# Persistence tests.
 core persistence test:
   stage: test
   <<: *gitlab_caching
