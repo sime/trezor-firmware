@@ -288,6 +288,12 @@ static int address_to_script_pubkey(const CoinInfo *coin, const char *address,
     // push addr_raw (segwit_addr_decode makes sure addr_raw_len is at most 40)
     script_pubkey[0] = witver == 0 ? 0 : 80 + witver;
     script_pubkey[1] = addr_raw_len;
+    // check that P2TR address encodes a valid BIP340 public key
+    if (witver == 1 && addr_raw_len == 32) {
+      if (0 != zkp_bip340_verify_publickey(addr_raw)) {
+        return 0;
+      }
+    }
     memcpy(script_pubkey + 2, addr_raw, addr_raw_len);
     *size = addr_raw_len + 2;
     return 1;
