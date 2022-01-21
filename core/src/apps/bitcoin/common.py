@@ -133,6 +133,9 @@ def decode_bech32_address(prefix: str, address: str) -> tuple[int, bytes]:
         raise wire.ProcessError("Invalid address witness program")
     assert witver is not None
     assert raw is not None
+    # check that P2TR address encodes a valid BIP340 public key
+    if witver == 1 and len(raw) == 32 and not bip340.verify_publickey(bytes(raw)):
+        raise wire.ProcessError("Invalid Taproot script")
     return witver, bytes(raw)
 
 
