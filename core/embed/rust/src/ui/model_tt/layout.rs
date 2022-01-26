@@ -7,7 +7,6 @@ use crate::{
         component::{
             base::ComponentExt, text::paragraphs::Paragraphs, Child, FormattedText, PageMsg,
         },
-        display,
         layout::obj::LayoutObj,
     },
     util,
@@ -15,7 +14,7 @@ use crate::{
 
 use super::{
     component::{Button, ButtonMsg, DialogMsg, HoldToConfirm, HoldToConfirmMsg, SwipePage, Title},
-    theme,
+    constant, theme,
 };
 
 impl<T> TryFrom<PageMsg<T, bool>> for Obj {
@@ -66,7 +65,7 @@ where
 #[no_mangle]
 extern "C" fn ui_layout_new_example(_param: Obj) -> Obj {
     let block = move || {
-        let layout = LayoutObj::new(Child::new(HoldToConfirm::new(display::screen(), |area| {
+        let layout = LayoutObj::new(Child::new(HoldToConfirm::new(constant::screen(), |area| {
             FormattedText::new::<theme::TTDefaultText>(
                 area,
                 "Testing text layout, with some text, and some more text. And {param}",
@@ -151,7 +150,7 @@ mod tests {
     #[test]
     fn trace_example_layout() {
         let layout = Child::new(Dialog::new(
-            display::screen(),
+            constant::screen(),
             |area| {
                 FormattedText::new::<theme::TTDefaultText>(
                     area,

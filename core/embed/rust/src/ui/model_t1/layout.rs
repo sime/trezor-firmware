@@ -5,7 +5,6 @@ use crate::{
     micropython::{buffer::Buffer, map::Map, obj::Obj, qstr::Qstr},
     ui::{
         component::{text::paragraphs::Paragraphs, Child, FormattedText, PageMsg},
-        display,
         layout::obj::LayoutObj,
     },
     util,
@@ -13,7 +12,7 @@ use crate::{
 
 use super::{
     component::{Button, ButtonPage, Title},
-    theme,
+    constant, theme,
 };
 
 impl<T> TryFrom<PageMsg<T, bool>> for Obj {
@@ -56,7 +55,7 @@ extern "C" fn ui_layout_new_confirm_action(
         let right = verb
             .map(|label| |area, pos| Button::with_text(area, pos, label, theme::button_default()));
 
-        let obj = LayoutObj::new(Child::new(Title::new(display::screen(), title, |area| {
+        let obj = LayoutObj::new(Child::new(Title::new(constant::screen(), title, |area| {
             ButtonPage::new(
                 area,
                 |area| {
@@ -84,7 +83,7 @@ extern "C" fn ui_layout_new_confirm_text(
         let description: Option<Buffer> =
             kwargs.get(Qstr::MP_QSTR_description)?.try_into_option()?;
 
-        let obj = LayoutObj::new(Child::new(Title::new(display::screen(), title, |area| {
+        let obj = LayoutObj::new(Child::new(Title::new(constant::screen(), title, |area| {
             ButtonPage::new(
                 area,
                 |area| {
@@ -137,7 +136,7 @@ mod tests {
     #[test]
     fn trace_example_layout() {
         let layout = Child::new(Dialog::new(
-            display::screen(),
+            constant::screen(),
             |area| {
                 FormattedText::new::<theme::T1DefaultText>(
                     area,
@@ -159,7 +158,7 @@ arameters! > left:<Button text:Left > right:<Button text:Right > >"#
 
     #[test]
     fn trace_layout_title() {
-        let layout = Child::new(Title::new(display::screen(), "Please confirm", |area| {
+        let layout = Child::new(Title::new(constant::screen(), "Please confirm", |area| {
             Dialog::new(
                 area,
                 |area| {
