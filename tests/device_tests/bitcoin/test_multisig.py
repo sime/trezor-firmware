@@ -17,6 +17,7 @@
 import pytest
 
 from trezorlib import btc, messages
+from trezorlib.debuglink import TrezorClientDebugLink
 from trezorlib.exceptions import TrezorFailure
 from trezorlib.tools import parse_path
 
@@ -44,7 +45,8 @@ TXHASH_0d5b56 = bytes.fromhex(
 pytestmark = pytest.mark.multisig
 
 
-def test_2_of_3(client):
+@pytest.mark.multisig
+def test_2_of_3(client: TrezorClientDebugLink):
     # input tx: 6b07c1321b52d9c85743f9695e13eb431b41708cdf4e1585258d51208e5b93fc
 
     nodes = [
@@ -144,7 +146,8 @@ def test_2_of_3(client):
     )
 
 
-def test_15_of_15(client):
+@pytest.mark.multisig
+def test_15_of_15(client: TrezorClientDebugLink):
     # input tx: 0d5b5648d47b5650edea1af3d47bbe5624213abb577cf1b1c96f98321f75cdbc
 
     node = btc.get_public_node(
@@ -186,8 +189,9 @@ def test_15_of_15(client):
     )
 
 
+@pytest.mark.multisig
 @pytest.mark.setup_client(mnemonic=MNEMONIC12)
-def test_missing_pubkey(client):
+def test_missing_pubkey(client: TrezorClientDebugLink):
     node = btc.get_public_node(
         client, parse_path("48h/0h/1h/0h/0"), coin_name="Bitcoin"
     ).node
@@ -227,7 +231,8 @@ def test_missing_pubkey(client):
         assert exc.value.message.endswith("Pubkey not found in multisig script")
 
 
-def test_attack_change_input(client):
+@pytest.mark.multisig
+def test_attack_change_input(client: TrezorClientDebugLink):
     """
     In Phases 1 and 2 the attacker replaces a non-multisig input
     `input_real` with a multisig input `input_fake`, which allows the
