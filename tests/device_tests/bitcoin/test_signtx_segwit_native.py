@@ -14,14 +14,14 @@
 # You should have received a copy of the License along with this library.
 # If not, see <https://www.gnu.org/licenses/lgpl-3.0.html>.
 
-from trezorlib.debuglink import TrezorClientDebugLink as Client
 import pytest
 
 from trezorlib import btc, messages
+from trezorlib.debuglink import TrezorClientDebugLink as Client
 from trezorlib.tools import H_, parse_path
 
-from ...common import assert_tx_matches
 from ...bip32 import deserialize
+from ...common import assert_tx_matches
 from ...tx_cache import TxCache
 from ..signtx import request_finished, request_input, request_meta, request_output
 
