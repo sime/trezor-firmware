@@ -14,29 +14,25 @@
 # You should have received a copy of the License along with this library.
 # If not, see <https://www.gnu.org/licenses/lgpl-3.0.html>.
 
+from trezorlib.debuglink import TrezorClientDebugLink as Client
 import pytest
 
 from trezorlib import btc, messages
 from trezorlib.tools import H_, parse_path
 
+from ...common import assert_tx_matches
 from ...bip32 import deserialize
 from ...tx_cache import TxCache
 from ..signtx import request_finished, request_input, request_meta, request_output
 
 B = messages.ButtonRequestType
-TX_API = TxCache("Testnet")
+TX_API_TESTNET = TxCache("Testnet")
 
 TXHASH_20912f = bytes.fromhex(
     "20912f98ea3ed849042efed0fdac8cb4fc301961c5988cba56902d8ffb61c337"
 )
 TXHASH_091446 = bytes.fromhex(
     "09144602765ce3dd8f4329445b20e3684e948709c5cdcaf12da3bb079c99448a"
-)
-TXHASH_65b811 = bytes.fromhex(
-    "65b811d3eca0fe6915d9f2d77c86c5a7f19bf66b1b1253c2c51cb4ae5f0c017b"
-)
-TXHASH_e5040e = bytes.fromhex(
-    "e5040e1bc1ae7667ffb9e5248e90b2fb93cd9150234151ce90e14ab2f5933bcd"
 )
 TXHASH_9c3192 = bytes.fromhex(
     "9c31922be756c06d02167656465c8dc83bb553bf386a3f478ae65b5c021002be"
@@ -56,26 +52,38 @@ TXHASH_a345b8 = bytes.fromhex(
 TXHASH_ec16dc = bytes.fromhex(
     "ec16dc5a539c5d60001a7471c37dbb0b5294c289c77df8bd07870b30d73e2231"
 )
+TXHASH_b36780 = bytes.fromhex(
+    "b36780ceb86807ca6e7535a6fd418b1b788cb9b227d2c8a26a0de295e523219e"
+)
+TXHASH_fcb3f5 = bytes.fromhex(
+    "fcb3f5436224900afdba50e9e763d98b920dfed056e552040d99ea9bc03a9d83"
+)
+TXHASH_d159fd = bytes.fromhex(
+    "d159fd2fcb5854a7c8b275d598765a446f1e2ff510bf077545a404a0c9db65f7"
+)
+TXHASH_65047a = bytes.fromhex(
+    "65047a2b107d6301d72d4a1e49e7aea9cf06903fdc4ae74a4a9bba9bc1a414d2"
+)
 
 
-def test_send_p2sh(client):
+def test_send_p2sh(client: Client):
     inp1 = messages.TxInputType(
-        address_n=parse_path("49'/1'/0'/1/0"),
+        address_n=parse_path("m/49h/1h/0h/1/0"),
         # 2N1LGaGg836mqSQqiuUBLfcyGBhyZbremDX
-        amount=123456789,
+        amount=123_456_789,
         prev_hash=TXHASH_20912f,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDP2SHWITNESS,
     )
     out1 = messages.TxOutputType(
         address="tb1qqzv60m9ajw8drqulta4ld4gfx0rdh82un5s65s",
-        amount=12300000,
+        amount=12_300_000,
         script_type=messages.OutputScriptType.PAYTOADDRESS,
     )
     out2 = messages.TxOutputType(
         address="2N1LGaGg836mqSQqiuUBLfcyGBhyZbremDX",
         script_type=messages.OutputScriptType.PAYTOADDRESS,
-        amount=123456789 - 11000 - 12300000,
+        amount=123_456_789 - 11_000 - 12_300_000,
     )
     with client:
         client.set_expected_responses(
@@ -99,7 +107,7 @@ def test_send_p2sh(client):
             ]
         )
         _, serialized_tx = btc.sign_tx(
-            client, "Testnet", [inp1], [out1, out2], prev_txes=TX_API
+            client, "Testnet", [inp1], [out1, out2], prev_txes=TX_API_TESTNET
         )
 
     assert (
@@ -108,24 +116,24 @@ def test_send_p2sh(client):
     )
 
 
-def test_send_p2sh_change(client):
+def test_send_p2sh_change(client: Client):
     inp1 = messages.TxInputType(
-        address_n=parse_path("49'/1'/0'/1/0"),
+        address_n=parse_path("m/49h/1h/0h/1/0"),
         # 2N1LGaGg836mqSQqiuUBLfcyGBhyZbremDX
-        amount=123456789,
+        amount=123_456_789,
         prev_hash=TXHASH_20912f,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDP2SHWITNESS,
     )
     out1 = messages.TxOutputType(
         address="tb1qqzv60m9ajw8drqulta4ld4gfx0rdh82un5s65s",
-        amount=12300000,
+        amount=12_300_000,
         script_type=messages.OutputScriptType.PAYTOADDRESS,
     )
     out2 = messages.TxOutputType(
-        address_n=parse_path("49'/1'/0'/1/0"),
+        address_n=parse_path("m/49h/1h/0h/1/0"),
         script_type=messages.OutputScriptType.PAYTOP2SHWITNESS,
-        amount=123456789 - 11000 - 12300000,
+        amount=123_456_789 - 11_000 - 12_300_000,
     )
     with client:
         client.set_expected_responses(
@@ -148,7 +156,7 @@ def test_send_p2sh_change(client):
             ]
         )
         _, serialized_tx = btc.sign_tx(
-            client, "Testnet", [inp1], [out1, out2], prev_txes=TX_API
+            client, "Testnet", [inp1], [out1, out2], prev_txes=TX_API_TESTNET
         )
 
     assert (
@@ -157,23 +165,24 @@ def test_send_p2sh_change(client):
     )
 
 
-def test_send_native(client):
+def test_send_native(client: Client):
     inp1 = messages.TxInputType(
-        address_n=parse_path("84'/1'/0'/0/0"),
-        amount=12300000,
-        prev_hash=TXHASH_091446,
+        # tb1qajr3a3y5uz27lkxrmn7ck8lp22dgytvagr5nqy
+        address_n=parse_path("m/84h/1h/0h/0/87"),
+        amount=100_000,
+        prev_hash=TXHASH_b36780,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDWITNESS,
     )
     out1 = messages.TxOutputType(
         address="2N4Q5FhU2497BryFfUgbqkAJE87aKHUhXMp",
-        amount=5000000,
+        amount=40_000,
         script_type=messages.OutputScriptType.PAYTOADDRESS,
     )
     out2 = messages.TxOutputType(
-        address="tb1q694ccp5qcc0udmfwgp692u2s2hjpq5h407urtu",
+        address="tb1qe48wz5ysk9mlzhkswcxct9tdjw6ejr2l9e6j8q",
         script_type=messages.OutputScriptType.PAYTOADDRESS,
-        amount=12300000 - 11000 - 5000000,
+        amount=100_000 - 40_000 - 10_000,
     )
     with client:
         client.set_expected_responses(
@@ -185,10 +194,10 @@ def test_send_native(client):
                 messages.ButtonRequest(code=B.ConfirmOutput),
                 messages.ButtonRequest(code=B.SignTx),
                 request_input(0),
-                request_meta(TXHASH_091446),
-                request_input(0, TXHASH_091446),
-                request_output(0, TXHASH_091446),
-                request_output(1, TXHASH_091446),
+                request_meta(TXHASH_b36780),
+                request_input(0, TXHASH_b36780),
+                request_output(0, TXHASH_b36780),
+                request_output(1, TXHASH_b36780),
                 request_input(0),
                 request_output(0),
                 request_output(1),
@@ -197,36 +206,38 @@ def test_send_native(client):
             ]
         )
         _, serialized_tx = btc.sign_tx(
-            client, "Testnet", [inp1], [out1, out2], prev_txes=TX_API
+            client, "Testnet", [inp1], [out1, out2], prev_txes=TX_API_TESTNET
         )
 
-    assert (
-        serialized_tx.hex()
-        == "010000000001018a44999c07bba32df1cacdc50987944e68e3205b4429438fdde35c76024614090000000000ffffffff02404b4c000000000017a9147a55d61848e77ca266e79a39bfc85c580a6426c987a8386f0000000000160014d16b8c0680c61fc6ed2e407455715055e41052f502473044022073ce72dcf2f6e42eeb44adbe7d5038cf3763f168d1c04bd8b873a19b53331f51022016b051725731e7f53a567021bcd9c370727f551c81e857ebae7c128472119652012103adc58245cf28406af0ef5cc24b8afba7f1be6c72f279b642d85c48798685f86200000000"
+    assert_tx_matches(
+        serialized_tx,
+        segwit_hash="bc1d39c603d6b59554c5181ec267409086484dcb7e645ed386e29442d8c067fa",
+        hash_link="https://tbtc1.trezor.io/api/tx/65047a2b107d6301d72d4a1e49e7aea9cf06903fdc4ae74a4a9bba9bc1a414d2",
+        tx_hex="010000000001019e2123e595e20d6aa2c8d227b2b98c781b8b41fda635756eca0768b8ce8067b30000000000ffffffff02409c00000000000017a9147a55d61848e77ca266e79a39bfc85c580a6426c98750c3000000000000160014cd4ee15090b177f15ed0760d85956d93b5990d5f0247304402200c734ed16a9226162a29133c14fad3565332c60346050ceb9246e73a2fc8485002203463d40cf78eb5cc9718d6617d9f251b987e96cb58525795a507acb9b91696c7012103f60fc56bf7b5326537c7e86e0a63b6cd008eeb87d39af324cee5bcc3424bf4d000000000",
     )
 
 
-def test_send_to_taproot(client):
+def test_send_to_taproot(client: Client):
     inp1 = messages.TxInputType(
-        address_n=parse_path("84'/1'/0'/0/0"),
-        amount=10000,
+        address_n=parse_path("m/84h/1h/0h/0/0"),
+        amount=10_000,
         prev_hash=TXHASH_ec16dc,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDWITNESS,
     )
     out1 = messages.TxOutputType(
         address="tb1pdvdljpj774356dpk32c2ks0yqv7q7c4f98px2d9e76s73vpudpxs7tl6vp",
-        amount=7000,
+        amount=7_000,
         script_type=messages.OutputScriptType.PAYTOADDRESS,
     )
     out2 = messages.TxOutputType(
         address="tb1qcc4ext5rsa8pzqa2m030jk670wmn5f649pu7sr",
         script_type=messages.OutputScriptType.PAYTOADDRESS,
-        amount=10000 - 7000 - 200,
+        amount=10_000 - 7_000 - 200,
     )
     with client:
         _, serialized_tx = btc.sign_tx(
-            client, "Testnet", [inp1], [out1, out2], prev_txes=TX_API
+            client, "Testnet", [inp1], [out1, out2], prev_txes=TX_API_TESTNET
         )
 
     assert (
@@ -235,23 +246,24 @@ def test_send_to_taproot(client):
     )
 
 
-def test_send_native_change(client):
+def test_send_native_change(client: Client):
     inp1 = messages.TxInputType(
-        address_n=parse_path("84'/1'/0'/0/0"),
-        amount=12300000,
-        prev_hash=TXHASH_091446,
+        # tb1qajr3a3y5uz27lkxrmn7ck8lp22dgytvagr5nqy
+        address_n=parse_path("m/84h/1h/0h/0/87"),
+        amount=100_000,
+        prev_hash=TXHASH_fcb3f5,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDWITNESS,
     )
     out1 = messages.TxOutputType(
-        address="2N4Q5FhU2497BryFfUgbqkAJE87aKHUhXMp",
-        amount=5000000,
+        address="2N4Q5FhU2497BryFfUgbqkAJE87aKHUhXMp",  # m/49h/1h/0h/0/0
+        amount=40_000,
         script_type=messages.OutputScriptType.PAYTOADDRESS,
     )
     out2 = messages.TxOutputType(
-        address_n=parse_path("84'/1'/0'/1/0"),
+        address_n=parse_path("m/84h/1h/0h/1/87"),
         script_type=messages.OutputScriptType.PAYTOWITNESS,
-        amount=12300000 - 11000 - 5000000,
+        amount=100_000 - 40_000 - 10_000,
     )
     with client:
         client.set_expected_responses(
@@ -262,10 +274,11 @@ def test_send_native_change(client):
                 request_output(1),
                 messages.ButtonRequest(code=B.SignTx),
                 request_input(0),
-                request_meta(TXHASH_091446),
-                request_input(0, TXHASH_091446),
-                request_output(0, TXHASH_091446),
-                request_output(1, TXHASH_091446),
+                request_meta(TXHASH_fcb3f5),
+                request_input(0, TXHASH_fcb3f5),
+                request_input(1, TXHASH_fcb3f5),
+                request_output(0, TXHASH_fcb3f5),
+                request_output(1, TXHASH_fcb3f5),
                 request_input(0),
                 request_output(0),
                 request_output(1),
@@ -274,46 +287,45 @@ def test_send_native_change(client):
             ]
         )
         _, serialized_tx = btc.sign_tx(
-            client, "Testnet", [inp1], [out1, out2], prev_txes=TX_API
+            client, "Testnet", [inp1], [out1, out2], prev_txes=TX_API_TESTNET
         )
 
-    assert (
-        serialized_tx.hex()
-        == "010000000001018a44999c07bba32df1cacdc50987944e68e3205b4429438fdde35c76024614090000000000ffffffff02404b4c000000000017a9147a55d61848e77ca266e79a39bfc85c580a6426c987a8386f0000000000160014cc8067093f6f843d6d3e22004a4290cd0c0f336b024730440220067675423ca6a0be3ddd5e13da00a9433775041e5cebc838873d2686f1d2840102201a5819e0312e6451d6b6180689101bce995685a51524cc4c3a5383f7bdab979a012103adc58245cf28406af0ef5cc24b8afba7f1be6c72f279b642d85c48798685f86200000000"
+    assert_tx_matches(
+        serialized_tx,
+        segwit_hash="a3668f39bc79f021303892a1a1a0c265ab5e192def801816246ef153b008c630",
+        hash_link="https://tbtc1.trezor.io/api/tx/2161a89815814c3866f5953c1e59a977f7cd5432c731cd5633378cfc3fb87fdd",
+        tx_hex="01000000000101839d3ac09bea990d0452e556d0fe0d928bd963e7e950bafd0a90246243f5b3fc0000000000ffffffff02409c00000000000017a9147a55d61848e77ca266e79a39bfc85c580a6426c98750c3000000000000160014cc3e33b1eb529cea8b34af5d2c5d6e6e332de9040247304402207413e26bf9eff16513f5ed1db710aa6f766b51f6c6f23ad5e9e8ddf5c67e8aba02204e09b0755ec173f6beeb8ddfa515d36afb25f046d0c851d48fdbc2e0ad3b9f13012103f60fc56bf7b5326537c7e86e0a63b6cd008eeb87d39af324cee5bcc3424bf4d000000000",
     )
 
 
-def test_send_both(client):
+def test_send_both(client: Client):
     inp1 = messages.TxInputType(
-        address_n=parse_path("49'/1'/0'/1/0"),
-        # 2N1LGaGg836mqSQqiuUBLfcyGBhyZbremDX
-        amount=111145789,
-        prev_hash=TXHASH_091446,
-        prev_index=1,
+        address_n=parse_path("m/49h/1h/0h/0/0"),  # 2N4Q5FhU2497BryFfUgbqkAJE87aKHUhXMp
+        amount=40_000,
+        prev_hash=TXHASH_65047a,
+        prev_index=0,
         script_type=messages.InputScriptType.SPENDP2SHWITNESS,
     )
     inp2 = messages.TxInputType(
-        address_n=parse_path("84'/1'/0'/1/0"),
-        amount=7289000,
-        prev_hash=TXHASH_65b811,
-        prev_index=1,
+        address_n=parse_path("m/84h/1h/0h/0/87"),
+        amount=100_000,
+        prev_hash=TXHASH_d159fd,
+        prev_index=0,
         script_type=messages.InputScriptType.SPENDWITNESS,
     )
     out1 = messages.TxOutputType(
         address="tb1q54un3q39sf7e7tlfq99d6ezys7qgc62a6rxllc",
-        amount=12300000,
+        amount=25_000,
         script_type=messages.OutputScriptType.PAYTOADDRESS,
     )
     out2 = messages.TxOutputType(
-        # address_n=parse_path("44'/1'/0'/0/0"),
-        # script_type=messages.OutputScriptType.PAYTOP2SHWITNESS,
         address="2N6UeBoqYEEnybg4cReFYDammpsyDw8R2Mc",
         script_type=messages.OutputScriptType.PAYTOADDRESS,
-        amount=45600000,
+        amount=35_000,
     )
     out3 = messages.TxOutputType(
         address="mvbu1Gdy8SUjTenqerxUaZyYjmveZvt33q",
-        amount=111145789 + 7289000 - 11000 - 12300000 - 45600000,
+        amount=100_000 + 40_000 - 25_000 - 35_000 - 10_000,
         script_type=messages.OutputScriptType.PAYTOADDRESS,
     )
 
@@ -330,15 +342,16 @@ def test_send_both(client):
                 messages.ButtonRequest(code=B.ConfirmOutput),
                 messages.ButtonRequest(code=B.SignTx),
                 request_input(0),
-                request_meta(TXHASH_091446),
-                request_input(0, TXHASH_091446),
-                request_output(0, TXHASH_091446),
-                request_output(1, TXHASH_091446),
+                request_meta(TXHASH_65047a),
+                request_input(0, TXHASH_65047a),
+                request_output(0, TXHASH_65047a),
+                request_output(1, TXHASH_65047a),
                 request_input(1),
-                request_meta(TXHASH_65b811),
-                request_input(0, TXHASH_65b811),
-                request_output(0, TXHASH_65b811),
-                request_output(1, TXHASH_65b811),
+                request_meta(TXHASH_d159fd),
+                request_input(0, TXHASH_d159fd),
+                request_output(0, TXHASH_d159fd),
+                request_output(1, TXHASH_d159fd),
+                request_output(2, TXHASH_d159fd),
                 request_input(0),
                 request_input(1),
                 request_output(0),
@@ -350,19 +363,27 @@ def test_send_both(client):
             ]
         )
         _, serialized_tx = btc.sign_tx(
-            client, "Testnet", [inp1, inp2], [out1, out2, out3], prev_txes=TX_API
+            client,
+            "Testnet",
+            [inp1, inp2],
+            [out1, out2, out3],
+            prev_txes=TX_API_TESTNET,
         )
 
-    assert (
-        serialized_tx.hex()
-        == "010000000001028a44999c07bba32df1cacdc50987944e68e3205b4429438fdde35c76024614090100000017160014d16b8c0680c61fc6ed2e407455715055e41052f5ffffffff7b010c5faeb41cc5c253121b6bf69bf1a7c5867cd7f2d91569fea0ecd311b8650100000000ffffffff03e0aebb0000000000160014a579388225827d9f2fe9014add644487808c695d00cdb7020000000017a91491233e24a9bf8dbb19c1187ad876a9380c12e787870d859b03000000001976a914a579388225827d9f2fe9014add644487808c695d88ac02483045022100ead79ee134f25bb585b48aee6284a4bb14e07f03cc130253e83450d095515e5202201e161e9402c8b26b666f2b67e5b668a404ef7e57858ae9a6a68c3837e65fdc69012103e7bfe10708f715e8538c92d46ca50db6f657bbc455b7494e6a0303ccdb868b7902463043021f585c54a84dc7326fa60e22729accd41153c7dd4725bd4c8f751aa3a8cd8d6a0220631bfd83fc312cc6d5d129572a25178696d81eaf50c8c3f16c6121be4f4c029d012103505647c017ff2156eb6da20fae72173d3b681a1d0a629f95f49e884db300689f00000000"
+    assert_tx_matches(
+        serialized_tx,
+        segwit_hash="8f22e3e15f3504aa0dcafd6a7ad95606479e0392ee2e594050bf7a7d2f67230a",
+        hash_link="https://tbtc1.trezor.io/api/tx/9012ec5daf9f09d79ab7ed63d1881f1e114a4ecc3754208d9254300bbdd8812e",
+        tx_hex="01000000000102d214a4c19bba9b4a4ae74adc3f9006cfa9aee7491e4a2dd701637d102b7a046500000000171600140099a7ecbd938ed1839f5f6bf6d50933c6db9d5cfffffffff765dbc9a004a4457507bf10f52f1e6f445a7698d575b2c8a75458cb2ffd59d10000000000ffffffff03a861000000000000160014a579388225827d9f2fe9014add644487808c695db88800000000000017a91491233e24a9bf8dbb19c1187ad876a9380c12e7878770110100000000001976a914a579388225827d9f2fe9014add644487808c695d88ac024730440220109f615c54b409fde8292ff27529dea51497ac6c72d83e555146cfb817e64cda02203b06c0d5ca3529ab56e0ad5fae44184f56afe1fec187ba00e2cb0da387ea7f7e0121033add1f0e8e3c3136f7428dd4a4de1057380bd311f5b0856e2269170b4ffa65bf0248304502210097f6be59665df66777e9804c92ac7c770089f532ce3668be9abc687f6a6f60290220634433824ad8dca5f20a3907d6e370312fdcb652434f6398f1bebe61858cf1cb012103f60fc56bf7b5326537c7e86e0a63b6cd008eeb87d39af324cee5bcc3424bf4d000000000",
     )
 
 
 @pytest.mark.multisig
-def test_send_multisig_1(client):
+def test_send_multisig_1(client: Client):
     nodes = [
-        btc.get_public_node(client, parse_path(f"49'/1'/{index}'"), coin_name="Testnet")
+        btc.get_public_node(
+            client, parse_path(f"m/49h/1h/{index}'"), coin_name="Testnet"
+        )
         for index in range(1, 4)
     ]
     multisig = messages.MultisigRedeemScriptType(
@@ -373,17 +394,17 @@ def test_send_multisig_1(client):
     )
 
     inp1 = messages.TxInputType(
-        address_n=parse_path("49'/1'/1'/0/0"),
+        address_n=parse_path("m/49h/1h/1h/0/0"),
         prev_hash=TXHASH_9c3192,
         prev_index=1,
         script_type=messages.InputScriptType.SPENDP2SHWITNESS,
         multisig=multisig,
-        amount=1610436,
+        amount=1_610_436,
     )
 
     out1 = messages.TxOutputType(
         address="tb1qch62pf820spe9mlq49ns5uexfnl6jzcezp7d328fw58lj0rhlhasge9hzy",
-        amount=1605000,
+        amount=1_605_000,
         script_type=messages.OutputScriptType.PAYTOADDRESS,
     )
 
@@ -405,7 +426,9 @@ def test_send_multisig_1(client):
                 request_finished(),
             ]
         )
-        signatures, _ = btc.sign_tx(client, "Testnet", [inp1], [out1], prev_txes=TX_API)
+        signatures, _ = btc.sign_tx(
+            client, "Testnet", [inp1], [out1], prev_txes=TX_API_TESTNET
+        )
         # store signature
         inp1.multisig.signatures[0] = signatures[0]
         # sign with third key
@@ -428,7 +451,7 @@ def test_send_multisig_1(client):
             ]
         )
         _, serialized_tx = btc.sign_tx(
-            client, "Testnet", [inp1], [out1], prev_txes=TX_API
+            client, "Testnet", [inp1], [out1], prev_txes=TX_API_TESTNET
         )
 
     assert (
@@ -438,9 +461,11 @@ def test_send_multisig_1(client):
 
 
 @pytest.mark.multisig
-def test_send_multisig_2(client):
+def test_send_multisig_2(client: Client):
     nodes = [
-        btc.get_public_node(client, parse_path(f"84'/1'/{index}'"), coin_name="Testnet")
+        btc.get_public_node(
+            client, parse_path(f"m/84h/1h/{index}'"), coin_name="Testnet"
+        )
         for index in range(1, 4)
     ]
     multisig = messages.MultisigRedeemScriptType(
@@ -451,17 +476,17 @@ def test_send_multisig_2(client):
     )
 
     inp1 = messages.TxInputType(
-        address_n=parse_path("84'/1'/2'/0/1"),
+        address_n=parse_path("m/84h/1h/2h/0/1"),
         prev_hash=TXHASH_f41cbe,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDWITNESS,
         multisig=multisig,
-        amount=1605000,
+        amount=1_605_000,
     )
 
     out1 = messages.TxOutputType(
         address="tb1qr6xa5v60zyt3ry9nmfew2fk5g9y3gerkjeu6xxdz7qga5kknz2ssld9z2z",
-        amount=1604000,
+        amount=1_604_000,
         script_type=messages.OutputScriptType.PAYTOADDRESS,
     )
 
@@ -482,7 +507,9 @@ def test_send_multisig_2(client):
                 request_finished(),
             ]
         )
-        signatures, _ = btc.sign_tx(client, "Testnet", [inp1], [out1], prev_txes=TX_API)
+        signatures, _ = btc.sign_tx(
+            client, "Testnet", [inp1], [out1], prev_txes=TX_API_TESTNET
+        )
         # store signature
         inp1.multisig.signatures[1] = signatures[0]
         # sign with first key
@@ -504,7 +531,7 @@ def test_send_multisig_2(client):
             ]
         )
         _, serialized_tx = btc.sign_tx(
-            client, "Testnet", [inp1], [out1], prev_txes=TX_API
+            client, "Testnet", [inp1], [out1], prev_txes=TX_API_TESTNET
         )
 
     assert (
@@ -514,9 +541,11 @@ def test_send_multisig_2(client):
 
 
 @pytest.mark.multisig
-def test_send_multisig_3_change(client):
+def test_send_multisig_3_change(client: Client):
     nodes = [
-        btc.get_public_node(client, parse_path(f"84'/1'/{index}'"), coin_name="Testnet")
+        btc.get_public_node(
+            client, parse_path(f"m/84h/1h/{index}'"), coin_name="Testnet"
+        )
         for index in range(1, 4)
     ]
     multisig = messages.MultisigRedeemScriptType(
@@ -533,17 +562,17 @@ def test_send_multisig_3_change(client):
     )
 
     inp1 = messages.TxInputType(
-        address_n=parse_path("84'/1'/1'/1/0"),
+        address_n=parse_path("m/84h/1h/1h/1/0"),
         prev_hash=TXHASH_c93480,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDWITNESS,
         multisig=multisig,
-        amount=1604000,
+        amount=1_604_000,
     )
 
     out1 = messages.TxOutputType(
-        address_n=parse_path("84'/1'/1'/1/1"),
-        amount=1603000,
+        address_n=parse_path("m/84h/1h/1h/1/1"),
+        amount=1_603_000,
         multisig=multisig2,
         script_type=messages.OutputScriptType.PAYTOP2SHWITNESS,
     )
@@ -564,7 +593,9 @@ def test_send_multisig_3_change(client):
                 request_finished(),
             ]
         )
-        signatures, _ = btc.sign_tx(client, "Testnet", [inp1], [out1], prev_txes=TX_API)
+        signatures, _ = btc.sign_tx(
+            client, "Testnet", [inp1], [out1], prev_txes=TX_API_TESTNET
+        )
         # store signature
         inp1.multisig.signatures[0] = signatures[0]
         # sign with third key
@@ -586,7 +617,7 @@ def test_send_multisig_3_change(client):
             ]
         )
         _, serialized_tx = btc.sign_tx(
-            client, "Testnet", [inp1], [out1], prev_txes=TX_API
+            client, "Testnet", [inp1], [out1], prev_txes=TX_API_TESTNET
         )
 
     assert (
@@ -596,9 +627,11 @@ def test_send_multisig_3_change(client):
 
 
 @pytest.mark.multisig
-def test_send_multisig_4_change(client):
+def test_send_multisig_4_change(client: Client):
     nodes = [
-        btc.get_public_node(client, parse_path(f"49'/1'/{index}'"), coin_name="Testnet")
+        btc.get_public_node(
+            client, parse_path(f"m/49h/1h/{index}'"), coin_name="Testnet"
+        )
         for index in range(1, 4)
     ]
     multisig = messages.MultisigRedeemScriptType(
@@ -615,17 +648,17 @@ def test_send_multisig_4_change(client):
     )
 
     inp1 = messages.TxInputType(
-        address_n=parse_path("49'/1'/1'/1/1"),
+        address_n=parse_path("m/49h/1h/1h/1/1"),
         prev_hash=TXHASH_31bc1c,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDP2SHWITNESS,
         multisig=multisig,
-        amount=1603000,
+        amount=1_603_000,
     )
 
     out1 = messages.TxOutputType(
-        address_n=parse_path("49'/1'/1'/1/2"),
-        amount=1602000,
+        address_n=parse_path("m/49h/1h/1h/1/2"),
+        amount=1_602_000,
         multisig=multisig2,
         script_type=messages.OutputScriptType.PAYTOWITNESS,
     )
@@ -646,7 +679,9 @@ def test_send_multisig_4_change(client):
                 request_finished(),
             ]
         )
-        signatures, _ = btc.sign_tx(client, "Testnet", [inp1], [out1], prev_txes=TX_API)
+        signatures, _ = btc.sign_tx(
+            client, "Testnet", [inp1], [out1], prev_txes=TX_API_TESTNET
+        )
         # store signature
         inp1.multisig.signatures[0] = signatures[0]
         # sign with third key
@@ -668,7 +703,7 @@ def test_send_multisig_4_change(client):
             ]
         )
         _, serialized_tx = btc.sign_tx(
-            client, "Testnet", [inp1], [out1], prev_txes=TX_API
+            client, "Testnet", [inp1], [out1], prev_txes=TX_API_TESTNET
         )
 
     assert (
@@ -677,9 +712,10 @@ def test_send_multisig_4_change(client):
     )
 
 
-# Ensure that if there is a non-multisig input, then a multisig output
-# will not be identified as a change output.
-def test_multisig_mismatch_inputs_single(client):
+def test_multisig_mismatch_inputs_single(client: Client):
+    # Ensure that if there is a non-multisig input, then a multisig output
+    # will not be identified as a change output.
+
     # m/84'/1'/0' for "alcohol woman abuse ..." seed.
     node_int = deserialize(
         "Vpub5kFDCYhiYuAzjk7TBQPNFffbexHF7iAd8AVVgHQKUany7e6NQvthgk86d7DfH57DY2dwBK4PyVTDDaS1r2gjkdyJyUYGoV9qNujGSrW9Dpe"
@@ -700,15 +736,15 @@ def test_multisig_mismatch_inputs_single(client):
     )
 
     inp1 = messages.TxInputType(
-        address_n=parse_path("84'/1'/0'/0/0"),
-        amount=12300000,
+        address_n=parse_path("m/84h/1h/0h/0/0"),
+        amount=12_300_000,
         prev_hash=TXHASH_091446,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDWITNESS,
     )
 
     inp2 = messages.TxInputType(
-        address_n=parse_path("84'/1'/0'/0/0"),
+        address_n=parse_path("m/84h/1h/0h/0/0"),
         prev_hash=TXHASH_a345b8,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDWITNESS,
@@ -718,15 +754,15 @@ def test_multisig_mismatch_inputs_single(client):
 
     out1 = messages.TxOutputType(
         address="2N4Q5FhU2497BryFfUgbqkAJE87aKHUhXMp",
-        amount=5000000,
+        amount=5_000_000,
         script_type=messages.OutputScriptType.PAYTOADDRESS,
     )
 
     out2 = messages.TxOutputType(
-        address_n=parse_path("84'/1'/0'/1/0"),
+        address_n=parse_path("m/84h/1h/0h/1/0"),
         script_type=messages.OutputScriptType.PAYTOWITNESS,
         multisig=multisig_out,
-        amount=12300000 + 100 - 5000000 - 10000,
+        amount=12_300_000 + 100 - 5_000_000 - 10_000,
     )
 
     with client:
@@ -760,7 +796,7 @@ def test_multisig_mismatch_inputs_single(client):
         )
 
         _, serialized_tx = btc.sign_tx(
-            client, "Testnet", [inp1, inp2], [out1, out2], prev_txes=TX_API
+            client, "Testnet", [inp1, inp2], [out1, out2], prev_txes=TX_API_TESTNET
         )
 
     assert (
