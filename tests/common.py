@@ -227,11 +227,16 @@ def get_test_address(client):
     return btc.get_address(client, "Testnet", TEST_ADDRESS_N)
 
 
-def assert_tx_matches(serialized_tx: bytes, hash_link: str, tx_hex: str = None) -> None:
+def assert_tx_matches(
+    serialized_tx: bytes, hash_link: str, tx_hex: str = None, segwit_hash: str = None
+) -> None:
     """Verifies if a transaction is correctly formed."""
-    hash_str = hash_link.split("/")[-1]
-    assert tools.tx_hash(serialized_tx).hex() == hash_str
-
+    # Segwit transactions have different tx_id and tx_hash, so we cannot get
+    # the tx_hash from the link (which has tx_id inside it)
+    if segwit_hash:
+        assert tools.tx_hash(serialized_tx).hex() == segwit_hash
+    else:
+        assert tools.tx_hash(serialized_tx).hex() == hash_link.split("/")[-1]
     if tx_hex:
         assert serialized_tx.hex() == tx_hex
 
