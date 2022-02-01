@@ -32,8 +32,8 @@ TX_API_TESTNET = TxCache("Testnet")
 TXHASH_c6091a = bytes.fromhex(
     "c6091adf4c0c23982a35899a6e58ae11e703eacd7954f588ed4b9cdefc4dba52"
 )
-TXHASH_fbbff7 = bytes.fromhex(
-    "fbbff7f3c85f8067453d7c062bd5efb8ad839953376ae5eceaf92774102c6e39"
+TXHASH_509e08 = bytes.fromhex(
+    "509e08424b047403b34dc83e9899e09185ea36791716e42c00a74e1f12bcb6ef"
 )
 TXHASH_6b07c1 = bytes.fromhex(
     "6b07c1321b52d9c85743f9695e13eb431b41708cdf4e1585258d51208e5b93fc"
@@ -239,17 +239,17 @@ def test_attack_change_input(client: TrezorClientDebugLink):
     attacker to provide a 1-of-2 multisig change address. When `input_real`
     is provided in the signing phase, an error must occur.
     """
-    address_n = parse_path("48h/1h/0h/1h/0/0")
+    address_n = parse_path("48h/1h/0h/1h/0/0")  # 2NErUdruXmM8o8bQySrzB3WdBRcmc5br4E8
     attacker_multisig_public_key = bytes.fromhex(
         "03653a148b68584acb97947344a7d4fd6a6f8b8485cad12987ff8edac874268088"
     )
 
     input_real = messages.TxInputType(
         address_n=address_n,
-        prev_hash=TXHASH_fbbff7,
-        prev_index=1,
+        prev_hash=TXHASH_509e08,
+        prev_index=0,
         script_type=messages.InputScriptType.SPENDP2SHWITNESS,
-        amount=1_000_000,
+        amount=61_093,
     )
 
     multisig_fake = messages.MultisigRedeemScriptType(
@@ -278,7 +278,7 @@ def test_attack_change_input(client: TrezorClientDebugLink):
 
     output_payee = messages.TxOutputType(
         address="n2eMqTT929pb1RDNuqEnxdaLau1rxy3efi",
-        amount=1_000,
+        amount=10_000,
         script_type=messages.OutputScriptType.PAYTOADDRESS,
     )
 
@@ -288,6 +288,16 @@ def test_attack_change_input(client: TrezorClientDebugLink):
         script_type=messages.OutputScriptType.PAYTOP2SHWITNESS,
         multisig=multisig_fake,
     )
+
+    # Transaction can be signed without the attack processor
+    with client:
+        btc.sign_tx(
+            client,
+            "Testnet",
+            [input_real],
+            [output_payee, output_change],
+            prev_txes=TX_API_TESTNET,
+        )
 
     attack_count = 3
 
@@ -301,26 +311,6 @@ def test_attack_change_input(client: TrezorClientDebugLink):
 
     with client:
         client.set_filter(messages.TxAck, attack_processor)
-        client.set_expected_responses(
-            [
-                request_input(0),
-                request_output(0),
-                messages.ButtonRequest(code=B.ConfirmOutput),
-                request_output(1),
-                messages.ButtonRequest(code=B.SignTx),
-                request_input(0),
-                request_meta(TXHASH_fbbff7),
-                request_input(0, TXHASH_fbbff7),
-                request_output(0, TXHASH_fbbff7),
-                request_output(1, TXHASH_fbbff7),
-                request_input(0),
-                request_output(0),
-                request_output(1),
-                request_input(0),
-                messages.Failure(code=messages.FailureType.ProcessError),
-            ]
-        )
-
         with pytest.raises(TrezorFailure) as exc:
             btc.sign_tx(
                 client,
@@ -329,8 +319,6 @@ def test_attack_change_input(client: TrezorClientDebugLink):
                 [output_payee, output_change],
                 prev_txes=TX_API_TESTNET,
             )
-            # must not produce this tx:
-            # 01000000000101396e2c107427f9eaece56a37539983adb8efd52b067c3d4567805fc8f3f7bffb01000000171600147a876a07b366f79000b441335f2907f777a0280bffffffff02e8030000000000001976a914e7c1345fc8f87c68170b3aa798a956c2fe6a9eff88ac703a0f000000000017a914a1261837f1b40e84346b1504ffe294e402965f2687024830450221009ff835e861be4e36ca1f2b6224aee2f253dfb9f456b13e4b1724bb4aaff4c9c802205e10679c2ead85743119f468cba5661f68b7da84dd2d477a7215fef98516f1f9012102af12ddd0d55e4fa2fcd084148eaf5b0b641320d0431d63d1e9a90f3cbd0d540700000000
 
-        assert exc.value.code == messages.FailureType.ProcessError
-        assert exc.value.message.endswith("Transaction has changed during signing")
+        assert exc.value.code == messages.FailureType.DataError
+        assert exc.value.message.endswith("Input does not match scriptPubKey")
