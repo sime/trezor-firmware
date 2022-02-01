@@ -34,18 +34,6 @@ TXHASH_20912f = bytes.fromhex(
 TXHASH_091446 = bytes.fromhex(
     "09144602765ce3dd8f4329445b20e3684e948709c5cdcaf12da3bb079c99448a"
 )
-TXHASH_9c3192 = bytes.fromhex(
-    "9c31922be756c06d02167656465c8dc83bb553bf386a3f478ae65b5c021002be"
-)
-TXHASH_f41cbe = bytes.fromhex(
-    "f41cbedd8becee05a830f418d13aa665125464547db5c7a6cd28f21639fe1228"
-)
-TXHASH_c93480 = bytes.fromhex(
-    "c9348040bbc2024e12dcb4a0b4806b0398646b91acf314da028c3f03dd0179fc"
-)
-TXHASH_31bc1c = bytes.fromhex(
-    "31bc1c88ce6ae337a6b3057a16d5bad0b561ad1dfc047d0a7fbb8814668f91e5"
-)
 TXHASH_a345b8 = bytes.fromhex(
     "a345b85759b385c6446055e4c3baa77e8161a65009dc009489b48aa6587ce348"
 )
@@ -64,9 +52,14 @@ TXHASH_d159fd = bytes.fromhex(
 TXHASH_65047a = bytes.fromhex(
     "65047a2b107d6301d72d4a1e49e7aea9cf06903fdc4ae74a4a9bba9bc1a414d2"
 )
+TXHASH_b9abfa = bytes.fromhex(
+    "b9abfa0d4a28f6f25e1f6c0f974bfc3f7c5a44c4d381b1796e3fbeef51b560a6"
+)
 
 
 def test_send_p2sh(client: Client):
+    # input tx: 20912f98ea3ed849042efed0fdac8cb4fc301961c5988cba56902d8ffb61c337
+
     inp1 = messages.TxInputType(
         address_n=parse_path("m/49h/1h/0h/1/0"),
         # 2N1LGaGg836mqSQqiuUBLfcyGBhyZbremDX
@@ -110,13 +103,17 @@ def test_send_p2sh(client: Client):
             client, "Testnet", [inp1], [out1, out2], prev_txes=TX_API_TESTNET
         )
 
-    assert (
-        serialized_tx.hex()
-        == "0100000000010137c361fb8f2d9056ba8c98c5611930fcb48cacfdd0fe2e0449d83eea982f91200000000017160014d16b8c0680c61fc6ed2e407455715055e41052f5ffffffff02e0aebb00000000001600140099a7ecbd938ed1839f5f6bf6d50933c6db9d5c3df39f060000000017a91458b53ea7f832e8f096e896b8713a8c6df0e892ca8702483045022100bd3d8b8ad35c094e01f6282277300e575f1021678fc63ec3f9945d6e35670da3022052e26ef0dd5f3741c9d5939d1dec5464c15ab5f2c85245e70a622df250d4eb7c012103e7bfe10708f715e8538c92d46ca50db6f657bbc455b7494e6a0303ccdb868b7900000000"
+    assert_tx_matches(
+        serialized_tx,
+        segwit_hash="b69aa93dc05bdae2bb35201b0ce2bd1641925b4f7e3f9afb878b0fd834d4637c",
+        hash_link="https://tbtc1.trezor.io/api/tx/09144602765ce3dd8f4329445b20e3684e948709c5cdcaf12da3bb079c99448a",
+        tx_hex="0100000000010137c361fb8f2d9056ba8c98c5611930fcb48cacfdd0fe2e0449d83eea982f91200000000017160014d16b8c0680c61fc6ed2e407455715055e41052f5ffffffff02e0aebb00000000001600140099a7ecbd938ed1839f5f6bf6d50933c6db9d5c3df39f060000000017a91458b53ea7f832e8f096e896b8713a8c6df0e892ca8702483045022100bd3d8b8ad35c094e01f6282277300e575f1021678fc63ec3f9945d6e35670da3022052e26ef0dd5f3741c9d5939d1dec5464c15ab5f2c85245e70a622df250d4eb7c012103e7bfe10708f715e8538c92d46ca50db6f657bbc455b7494e6a0303ccdb868b7900000000",
     )
 
 
 def test_send_p2sh_change(client: Client):
+    # input tx: 20912f98ea3ed849042efed0fdac8cb4fc301961c5988cba56902d8ffb61c337
+
     inp1 = messages.TxInputType(
         address_n=parse_path("m/49h/1h/0h/1/0"),
         # 2N1LGaGg836mqSQqiuUBLfcyGBhyZbremDX
@@ -159,6 +156,7 @@ def test_send_p2sh_change(client: Client):
             client, "Testnet", [inp1], [out1, out2], prev_txes=TX_API_TESTNET
         )
 
+    # Transaction does not exist on the blockchain, not using assert_tx_matches()
     assert (
         serialized_tx.hex()
         == "0100000000010137c361fb8f2d9056ba8c98c5611930fcb48cacfdd0fe2e0449d83eea982f91200000000017160014d16b8c0680c61fc6ed2e407455715055e41052f5ffffffff02e0aebb00000000001600140099a7ecbd938ed1839f5f6bf6d50933c6db9d5c3df39f060000000017a91458b53ea7f832e8f096e896b8713a8c6df0e892ca8702483045022100bd3d8b8ad35c094e01f6282277300e575f1021678fc63ec3f9945d6e35670da3022052e26ef0dd5f3741c9d5939d1dec5464c15ab5f2c85245e70a622df250d4eb7c012103e7bfe10708f715e8538c92d46ca50db6f657bbc455b7494e6a0303ccdb868b7900000000"
@@ -166,6 +164,8 @@ def test_send_p2sh_change(client: Client):
 
 
 def test_send_native(client: Client):
+    # input tx: b36780ceb86807ca6e7535a6fd418b1b788cb9b227d2c8a26a0de295e523219e
+
     inp1 = messages.TxInputType(
         # tb1qajr3a3y5uz27lkxrmn7ck8lp22dgytvagr5nqy
         address_n=parse_path("m/84h/1h/0h/0/87"),
@@ -218,6 +218,8 @@ def test_send_native(client: Client):
 
 
 def test_send_to_taproot(client: Client):
+    # input tx: ec16dc5a539c5d60001a7471c37dbb0b5294c289c77df8bd07870b30d73e2231
+
     inp1 = messages.TxInputType(
         address_n=parse_path("m/84h/1h/0h/0/0"),
         amount=10_000,
@@ -240,13 +242,17 @@ def test_send_to_taproot(client: Client):
             client, "Testnet", [inp1], [out1, out2], prev_txes=TX_API_TESTNET
         )
 
-    assert (
-        serialized_tx.hex()
-        == "0100000000010131223ed7300b8707bdf87dc789c294520bbb7dc371741a00605d9c535adc16ec0000000000ffffffff02581b0000000000002251206b1bf9065ef5634d34368ab0ab41e4033c0f62a929c26534b9f6a1e8b03c684df00a000000000000160014c62b932e83874e1103aadbe2f95b5e7bb73a275502473044022008ce0e893e91935ada9a31fe6b2f6228070dd2a5bdebc413429e658be761901502207086e0d3aa6abbad29c966444d3b791e43c174f88154381d07c92a84fec7c527012103adc58245cf28406af0ef5cc24b8afba7f1be6c72f279b642d85c48798685f86200000000"
+    assert_tx_matches(
+        serialized_tx,
+        segwit_hash="922dbce2d3a2ad9464b802f63e28ef81897841def5d7227374150faeae69e6ce",
+        hash_link="https://tbtc1.trezor.io/api/tx/4f7ad10322f7d1be86ac03997cb6bcad852b8937e504de5779dfcf313edf300e",
+        tx_hex="0100000000010131223ed7300b8707bdf87dc789c294520bbb7dc371741a00605d9c535adc16ec0000000000ffffffff02581b0000000000002251206b1bf9065ef5634d34368ab0ab41e4033c0f62a929c26534b9f6a1e8b03c684df00a000000000000160014c62b932e83874e1103aadbe2f95b5e7bb73a275502473044022008ce0e893e91935ada9a31fe6b2f6228070dd2a5bdebc413429e658be761901502207086e0d3aa6abbad29c966444d3b791e43c174f88154381d07c92a84fec7c527012103adc58245cf28406af0ef5cc24b8afba7f1be6c72f279b642d85c48798685f86200000000",
     )
 
 
 def test_send_native_change(client: Client):
+    # input tx: fcb3f5436224900afdba50e9e763d98b920dfed056e552040d99ea9bc03a9d83
+
     inp1 = messages.TxInputType(
         # tb1qajr3a3y5uz27lkxrmn7ck8lp22dgytvagr5nqy
         address_n=parse_path("m/84h/1h/0h/0/87"),
@@ -299,6 +305,9 @@ def test_send_native_change(client: Client):
 
 
 def test_send_both(client: Client):
+    # input 1 tx: 65047a2b107d6301d72d4a1e49e7aea9cf06903fdc4ae74a4a9bba9bc1a414d2
+    # input 2 tx: d159fd2fcb5854a7c8b275d598765a446f1e2ff510bf077545a404a0c9db65f7
+
     inp1 = messages.TxInputType(
         address_n=parse_path("m/49h/1h/0h/0/0"),  # 2N4Q5FhU2497BryFfUgbqkAJE87aKHUhXMp
         amount=40_000,
@@ -380,12 +389,15 @@ def test_send_both(client: Client):
 
 @pytest.mark.multisig
 def test_send_multisig_1(client: Client):
+    # input tx: b9abfa0d4a28f6f25e1f6c0f974bfc3f7c5a44c4d381b1796e3fbeef51b560a6
+
     nodes = [
         btc.get_public_node(
-            client, parse_path(f"m/49h/1h/{index}'"), coin_name="Testnet"
+            client, parse_path(f"m/49h/1h/{index}h"), coin_name="Testnet"
         )
         for index in range(1, 4)
     ]
+    # 2NFe7UAaccZxavBstpqDPkDasTGR154uvzT
     multisig = messages.MultisigRedeemScriptType(
         nodes=[deserialize(n.xpub) for n in nodes],
         address_n=[0, 0],
@@ -395,37 +407,40 @@ def test_send_multisig_1(client: Client):
 
     inp1 = messages.TxInputType(
         address_n=parse_path("m/49h/1h/1h/0/0"),
-        prev_hash=TXHASH_9c3192,
-        prev_index=1,
+        prev_hash=TXHASH_b9abfa,
+        prev_index=4,
         script_type=messages.InputScriptType.SPENDP2SHWITNESS,
         multisig=multisig,
-        amount=1_610_436,
+        amount=100_000,
     )
 
     out1 = messages.TxOutputType(
         address="tb1qch62pf820spe9mlq49ns5uexfnl6jzcezp7d328fw58lj0rhlhasge9hzy",
-        amount=1_605_000,
+        amount=100_000 - 10_000,
         script_type=messages.OutputScriptType.PAYTOADDRESS,
     )
 
+    expected_responses = [
+        request_input(0),
+        request_output(0),
+        messages.ButtonRequest(code=B.ConfirmOutput),
+        messages.ButtonRequest(code=B.SignTx),
+        request_input(0),
+        request_meta(TXHASH_b9abfa),
+        request_input(0, TXHASH_b9abfa),
+        request_output(0, TXHASH_b9abfa),
+        request_output(1, TXHASH_b9abfa),
+        request_output(2, TXHASH_b9abfa),
+        request_output(3, TXHASH_b9abfa),
+        request_output(4, TXHASH_b9abfa),
+        request_input(0),
+        request_output(0),
+        request_input(0),
+        request_finished(),
+    ]
+
     with client:
-        client.set_expected_responses(
-            [
-                request_input(0),
-                request_output(0),
-                messages.ButtonRequest(code=B.ConfirmOutput),
-                messages.ButtonRequest(code=B.SignTx),
-                request_input(0),
-                request_meta(TXHASH_9c3192),
-                request_input(0, TXHASH_9c3192),
-                request_output(0, TXHASH_9c3192),
-                request_output(1, TXHASH_9c3192),
-                request_input(0),
-                request_output(0),
-                request_input(0),
-                request_finished(),
-            ]
-        )
+        client.set_expected_responses(expected_responses)
         signatures, _ = btc.sign_tx(
             client, "Testnet", [inp1], [out1], prev_txes=TX_API_TESTNET
         )
@@ -433,41 +448,30 @@ def test_send_multisig_1(client: Client):
         inp1.multisig.signatures[0] = signatures[0]
         # sign with third key
         inp1.address_n[2] = H_(3)
-        client.set_expected_responses(
-            [
-                request_input(0),
-                request_output(0),
-                messages.ButtonRequest(code=B.ConfirmOutput),
-                messages.ButtonRequest(code=B.SignTx),
-                request_input(0),
-                request_meta(TXHASH_9c3192),
-                request_input(0, TXHASH_9c3192),
-                request_output(0, TXHASH_9c3192),
-                request_output(1, TXHASH_9c3192),
-                request_input(0),
-                request_output(0),
-                request_input(0),
-                request_finished(),
-            ]
-        )
+        client.set_expected_responses(expected_responses)
         _, serialized_tx = btc.sign_tx(
             client, "Testnet", [inp1], [out1], prev_txes=TX_API_TESTNET
         )
 
-    assert (
-        serialized_tx.hex()
-        == "01000000000101be0210025c5be68a473f6a38bf53b53bc88d5c46567616026dc056e72b92319c01000000232200208d398cfb58a1d9cdb59ccbce81559c095e8c6f4a3e64966ca385078d9879f95effffffff01887d180000000000220020c5f4a0a4ea7c0392efe0a9670a73264cffa90b19107cd8a8e9750ff93c77fdfb0400483045022100dd6342c65197af27d7894d8b8b88b16b568ee3b5ebfdc55fdfb7caa9650e3b4c02200c7074a5bcb0068f63d9014c7cd2b0490aba75822d315d41aad444e9b86adf5201483045022100e7e6c2d21109512ba0609e93903e84bfb7731ac3962ee2c1cad54a7a30ff99a20220421497930226c39fc3834e8d6da3fc876516239518b0e82e2dc1e3c46271a17c01695221021630971f20fa349ba940a6ba3706884c41579cd760c89901374358db5dd545b92102f2ff4b353702d2bb03d4c494be19d77d0ab53d16161b53fbcaf1afeef4ad0cb52103e9b6b1c691a12ce448f1aedbbd588e064869c79fbd760eae3b8cd8a5f1a224db53ae00000000"
+    assert_tx_matches(
+        serialized_tx,
+        segwit_hash="52981c8c95da55070cfbef467a0c7b0e625fb903a738e3b4f41d4a35bbc2ce54",
+        hash_link="https://tbtc1.trezor.io/api/tx/3ec03ab3487655f88e13063b71882af5f52d1db6f622b50190035d7260517d50",
+        tx_hex="01000000000101a660b551efbe3f6e79b181d3c4445a7c3ffc4b970f6c1f5ef2f6284a0dfaabb904000000232200208d398cfb58a1d9cdb59ccbce81559c095e8c6f4a3e64966ca385078d9879f95effffffff01905f010000000000220020c5f4a0a4ea7c0392efe0a9670a73264cffa90b19107cd8a8e9750ff93c77fdfb040047304402203f3309fce4beab5131917615996ae79308a36043d46a52865f39d22e2f2b7abd02207d7f2e1cf1e0029192c33a5466e7717f906b8bfd512ba8c1264490691dc0d94601483045022100a154ab8162ef7328d82fc70b288ce422752bf4635626d30b467eb08985025441022065636e0537e10493dd82c0385252bde81d161236b092fcae8de359b253da41fd01695221021630971f20fa349ba940a6ba3706884c41579cd760c89901374358db5dd545b92102f2ff4b353702d2bb03d4c494be19d77d0ab53d16161b53fbcaf1afeef4ad0cb52103e9b6b1c691a12ce448f1aedbbd588e064869c79fbd760eae3b8cd8a5f1a224db53ae00000000",
     )
 
 
 @pytest.mark.multisig
 def test_send_multisig_2(client: Client):
+    # input tx: b9abfa0d4a28f6f25e1f6c0f974bfc3f7c5a44c4d381b1796e3fbeef51b560a6
+
     nodes = [
         btc.get_public_node(
-            client, parse_path(f"m/84h/1h/{index}'"), coin_name="Testnet"
+            client, parse_path(f"m/84h/1h/{index}h"), coin_name="Testnet"
         )
         for index in range(1, 4)
     ]
+    # tb1qauuv4e2pwjkr4ws5f8p20hu562jlqpe5h74whxqrwf7pufsgzcms9y8set
     multisig = messages.MultisigRedeemScriptType(
         nodes=[deserialize(n.xpub) for n in nodes],
         address_n=[0, 1],
@@ -477,36 +481,40 @@ def test_send_multisig_2(client: Client):
 
     inp1 = messages.TxInputType(
         address_n=parse_path("m/84h/1h/2h/0/1"),
-        prev_hash=TXHASH_f41cbe,
-        prev_index=0,
+        prev_hash=TXHASH_b9abfa,
+        prev_index=1,
         script_type=messages.InputScriptType.SPENDWITNESS,
         multisig=multisig,
-        amount=1_605_000,
+        amount=100_000,
     )
 
     out1 = messages.TxOutputType(
         address="tb1qr6xa5v60zyt3ry9nmfew2fk5g9y3gerkjeu6xxdz7qga5kknz2ssld9z2z",
-        amount=1_604_000,
+        amount=100_000 - 10_000,
         script_type=messages.OutputScriptType.PAYTOADDRESS,
     )
 
+    expected_responses = [
+        request_input(0),
+        request_output(0),
+        messages.ButtonRequest(code=B.ConfirmOutput),
+        messages.ButtonRequest(code=B.SignTx),
+        request_input(0),
+        request_meta(TXHASH_b9abfa),
+        request_input(0, TXHASH_b9abfa),
+        request_output(0, TXHASH_b9abfa),
+        request_output(1, TXHASH_b9abfa),
+        request_output(2, TXHASH_b9abfa),
+        request_output(3, TXHASH_b9abfa),
+        request_output(4, TXHASH_b9abfa),
+        request_input(0),
+        request_output(0),
+        request_input(0),
+        request_finished(),
+    ]
+
     with client:
-        client.set_expected_responses(
-            [
-                request_input(0),
-                request_output(0),
-                messages.ButtonRequest(code=B.ConfirmOutput),
-                messages.ButtonRequest(code=B.SignTx),
-                request_input(0),
-                request_meta(TXHASH_f41cbe),
-                request_input(0, TXHASH_f41cbe),
-                request_output(0, TXHASH_f41cbe),
-                request_input(0),
-                request_output(0),
-                request_input(0),
-                request_finished(),
-            ]
-        )
+        client.set_expected_responses(expected_responses)
         signatures, _ = btc.sign_tx(
             client, "Testnet", [inp1], [out1], prev_txes=TX_API_TESTNET
         )
@@ -514,40 +522,30 @@ def test_send_multisig_2(client: Client):
         inp1.multisig.signatures[1] = signatures[0]
         # sign with first key
         inp1.address_n[2] = H_(1)
-        client.set_expected_responses(
-            [
-                request_input(0),
-                request_output(0),
-                messages.ButtonRequest(code=B.ConfirmOutput),
-                messages.ButtonRequest(code=B.SignTx),
-                request_input(0),
-                request_meta(TXHASH_f41cbe),
-                request_input(0, TXHASH_f41cbe),
-                request_output(0, TXHASH_f41cbe),
-                request_input(0),
-                request_output(0),
-                request_input(0),
-                request_finished(),
-            ]
-        )
+        client.set_expected_responses(expected_responses)
         _, serialized_tx = btc.sign_tx(
             client, "Testnet", [inp1], [out1], prev_txes=TX_API_TESTNET
         )
 
-    assert (
-        serialized_tx.hex()
-        == "010000000001012812fe3916f228cda6c7b57d5464541265a63ad118f430a805eeec8bddbe1cf40000000000ffffffff01a0791800000000002200201e8dda334f11171190b3da72e526d441491464769679a319a2f011da5ad312a10400473044022001b7f4f21a8ddcd5e0faaaee3b95515bf8b84f2a7cbfdf66996c64123617a5cf02202fc6a776a7225420dbca759ad4ac83a61d15bf8d2883b6bf1aa31de7437f9b6e0147304402206c4125c1189a3b3e93a77cdf54c60c0538b80e5a03ec74e6ac776dfa77706ee4022035be14de76259b9d8a24863131a06a65b95df02f7d3ace90d52b37e8d94b167f0169522103bab8ecdd9ae2c51a0dc858f4c751b27533143bf6013ba1725ba8a4ecebe7de8c21027d5e55696c875308b03f2ca3d8637f51d3e35da9456a5187aa14b3de8a89534f2103b78eabaea8b3a4868be4f4bb96d6f66973f7081faa7f1cafba321444611c241e53ae00000000"
+    assert_tx_matches(
+        serialized_tx,
+        segwit_hash="87883a4c51d0e0837dc1b96e3e5b796bec42745dcc8e653fc22b92b2ead36a50",
+        hash_link="https://tbtc1.trezor.io/api/tx/2aad59bad0dd1ad3e9b2a4019bbb47c16111d5a2eddde50997e4199c26ee5882",
+        tx_hex="01000000000101a660b551efbe3f6e79b181d3c4445a7c3ffc4b970f6c1f5ef2f6284a0dfaabb90100000000ffffffff01905f0100000000002200201e8dda334f11171190b3da72e526d441491464769679a319a2f011da5ad312a10400483045022100ab35a9f9f915ed4d2017237c12d4676545bdf124c5b1c552e9e23777e601372b02202aee125c86a4255102ccba2ea0c5e7d42bb16f4b183a4cde3e707379574d61500147304402204ab0b571d1f4a37cf94cb3644f261483bcfa387d6a9f3631720d0966bf9248cf0220650b1f928343600b7eedc929902c9b16bf0f00431643b05642fdcf1ae1fd72af0169522103bab8ecdd9ae2c51a0dc858f4c751b27533143bf6013ba1725ba8a4ecebe7de8c21027d5e55696c875308b03f2ca3d8637f51d3e35da9456a5187aa14b3de8a89534f2103b78eabaea8b3a4868be4f4bb96d6f66973f7081faa7f1cafba321444611c241e53ae00000000",
     )
 
 
 @pytest.mark.multisig
 def test_send_multisig_3_change(client: Client):
+    # input tx: b9abfa0d4a28f6f25e1f6c0f974bfc3f7c5a44c4d381b1796e3fbeef51b560a6
+
     nodes = [
         btc.get_public_node(
-            client, parse_path(f"m/84h/1h/{index}'"), coin_name="Testnet"
+            client, parse_path(f"m/84h/1h/{index}h"), coin_name="Testnet"
         )
         for index in range(1, 4)
     ]
+    # tb1ql8zsl5jvpvue4xuf2dqc2w73ejcthuyrjxasuwm9z58fsxwkut9sw3trx9
     multisig = messages.MultisigRedeemScriptType(
         nodes=[deserialize(n.xpub) for n in nodes],
         address_n=[1, 0],
@@ -563,36 +561,40 @@ def test_send_multisig_3_change(client: Client):
 
     inp1 = messages.TxInputType(
         address_n=parse_path("m/84h/1h/1h/1/0"),
-        prev_hash=TXHASH_c93480,
-        prev_index=0,
+        prev_hash=TXHASH_b9abfa,
+        prev_index=2,
         script_type=messages.InputScriptType.SPENDWITNESS,
         multisig=multisig,
-        amount=1_604_000,
+        amount=100_000,
     )
 
     out1 = messages.TxOutputType(
         address_n=parse_path("m/84h/1h/1h/1/1"),
-        amount=1_603_000,
+        amount=100_000 - 10_000,
         multisig=multisig2,
         script_type=messages.OutputScriptType.PAYTOP2SHWITNESS,
     )
 
+    expected_responses = [
+        request_input(0),
+        request_output(0),
+        messages.ButtonRequest(code=B.SignTx),
+        request_input(0),
+        request_meta(TXHASH_b9abfa),
+        request_input(0, TXHASH_b9abfa),
+        request_output(0, TXHASH_b9abfa),
+        request_output(1, TXHASH_b9abfa),
+        request_output(2, TXHASH_b9abfa),
+        request_output(3, TXHASH_b9abfa),
+        request_output(4, TXHASH_b9abfa),
+        request_input(0),
+        request_output(0),
+        request_input(0),
+        request_finished(),
+    ]
+
     with client:
-        client.set_expected_responses(
-            [
-                request_input(0),
-                request_output(0),
-                messages.ButtonRequest(code=B.SignTx),
-                request_input(0),
-                request_meta(TXHASH_c93480),
-                request_input(0, TXHASH_c93480),
-                request_output(0, TXHASH_c93480),
-                request_input(0),
-                request_output(0),
-                request_input(0),
-                request_finished(),
-            ]
-        )
+        client.set_expected_responses(expected_responses)
         signatures, _ = btc.sign_tx(
             client, "Testnet", [inp1], [out1], prev_txes=TX_API_TESTNET
         )
@@ -601,39 +603,30 @@ def test_send_multisig_3_change(client: Client):
         # sign with third key
         inp1.address_n[2] = H_(3)
         out1.address_n[2] = H_(3)
-        client.set_expected_responses(
-            [
-                request_input(0),
-                request_output(0),
-                messages.ButtonRequest(code=B.SignTx),
-                request_input(0),
-                request_meta(TXHASH_c93480),
-                request_input(0, TXHASH_c93480),
-                request_output(0, TXHASH_c93480),
-                request_input(0),
-                request_output(0),
-                request_input(0),
-                request_finished(),
-            ]
-        )
+        client.set_expected_responses(expected_responses)
         _, serialized_tx = btc.sign_tx(
             client, "Testnet", [inp1], [out1], prev_txes=TX_API_TESTNET
         )
 
-    assert (
-        serialized_tx.hex()
-        == "01000000000101fc7901dd033f8c02da14f3ac916b6498036b80b4a0b4dc124e02c2bb408034c90000000000ffffffff01b87518000000000017a914536250d41937e5b641082447580ff6a8e46c122a870400473044022003c26107a5a47f1f900ef8aa758977530cd13ea37a33971abae8d75cac2f9f34022039e2b8c2c1d0c24ff4fc026652e1f27ad8e3ed6c9bf485f61d9aa691cb57830801483045022100963b0dc0ab46e963a66ab6e69e5e41bac6c4fedc127cac12c560b029d54fe87402205b3bcdcf313dccd78e5dce0540e7d3c8cc1bf83f13c1f9f01811eb791fd35c8101695221039dba3a72f5dc3cad17aa924b5a03c34561465f997d0cb15993f2ca2c0be771c42103cd39f3f08bbd508dce4d307d57d0c70c258c285878bfda579fa260acc738c25d2102cd631ba95beca1d64766f5540885092d0bb384a3c13b6c3a5334d0ebacf51b9553ae00000000"
+    assert_tx_matches(
+        serialized_tx,
+        segwit_hash="52584fcd5409cee5b84148c13cf3ab7e59a923915601ab4a6d022253d39f987d",
+        hash_link="https://tbtc1.trezor.io/api/tx/16bfb04cd202a9aab41dcc3c73504f5a342345b1e1420d934a91b49c2447029d",
+        tx_hex="01000000000101a660b551efbe3f6e79b181d3c4445a7c3ffc4b970f6c1f5ef2f6284a0dfaabb90200000000ffffffff01905f01000000000017a914536250d41937e5b641082447580ff6a8e46c122a8704004730440220020e4bd3e7173769e82ddb10c101f612d5ef91197983015de9d20f556992bdb4022019f6e3774d1b96d6e82605f3919e5b306035c58c8f3023d12dfdfc9ececebdbe01483045022100e9175e1032d03761740f36c336f38b0b586659d74d57f89a301df551f934f29c02207a52b5a24a85a6344f4fd0b1d51f37a61408b75f3f21a7df5727196cbd2513d701695221039dba3a72f5dc3cad17aa924b5a03c34561465f997d0cb15993f2ca2c0be771c42103cd39f3f08bbd508dce4d307d57d0c70c258c285878bfda579fa260acc738c25d2102cd631ba95beca1d64766f5540885092d0bb384a3c13b6c3a5334d0ebacf51b9553ae00000000",
     )
 
 
 @pytest.mark.multisig
 def test_send_multisig_4_change(client: Client):
+    # input tx: b9abfa0d4a28f6f25e1f6c0f974bfc3f7c5a44c4d381b1796e3fbeef51b560a6
+
     nodes = [
         btc.get_public_node(
-            client, parse_path(f"m/49h/1h/{index}'"), coin_name="Testnet"
+            client, parse_path(f"m/49h/1h/{index}h"), coin_name="Testnet"
         )
         for index in range(1, 4)
     ]
+    # 2MxuPZQqtLTPJQWcLL9oLVZAKRAGy6mq4Po
     multisig = messages.MultisigRedeemScriptType(
         nodes=[deserialize(n.xpub) for n in nodes],
         address_n=[1, 1],
@@ -649,36 +642,40 @@ def test_send_multisig_4_change(client: Client):
 
     inp1 = messages.TxInputType(
         address_n=parse_path("m/49h/1h/1h/1/1"),
-        prev_hash=TXHASH_31bc1c,
-        prev_index=0,
+        prev_hash=TXHASH_b9abfa,
+        prev_index=3,
         script_type=messages.InputScriptType.SPENDP2SHWITNESS,
         multisig=multisig,
-        amount=1_603_000,
+        amount=100_000,
     )
 
     out1 = messages.TxOutputType(
         address_n=parse_path("m/49h/1h/1h/1/2"),
-        amount=1_602_000,
+        amount=100_000 - 10_000,
         multisig=multisig2,
         script_type=messages.OutputScriptType.PAYTOWITNESS,
     )
 
+    expected_responses = [
+        request_input(0),
+        request_output(0),
+        messages.ButtonRequest(code=B.SignTx),
+        request_input(0),
+        request_meta(TXHASH_b9abfa),
+        request_input(0, TXHASH_b9abfa),
+        request_output(0, TXHASH_b9abfa),
+        request_output(1, TXHASH_b9abfa),
+        request_output(2, TXHASH_b9abfa),
+        request_output(3, TXHASH_b9abfa),
+        request_output(4, TXHASH_b9abfa),
+        request_input(0),
+        request_output(0),
+        request_input(0),
+        request_finished(),
+    ]
+
     with client:
-        client.set_expected_responses(
-            [
-                request_input(0),
-                request_output(0),
-                messages.ButtonRequest(code=B.SignTx),
-                request_input(0),
-                request_meta(TXHASH_31bc1c),
-                request_input(0, TXHASH_31bc1c),
-                request_output(0, TXHASH_31bc1c),
-                request_input(0),
-                request_output(0),
-                request_input(0),
-                request_finished(),
-            ]
-        )
+        client.set_expected_responses(expected_responses)
         signatures, _ = btc.sign_tx(
             client, "Testnet", [inp1], [out1], prev_txes=TX_API_TESTNET
         )
@@ -687,28 +684,16 @@ def test_send_multisig_4_change(client: Client):
         # sign with third key
         inp1.address_n[2] = H_(3)
         out1.address_n[2] = H_(3)
-        client.set_expected_responses(
-            [
-                request_input(0),
-                request_output(0),
-                messages.ButtonRequest(code=B.SignTx),
-                request_input(0),
-                request_meta(TXHASH_31bc1c),
-                request_input(0, TXHASH_31bc1c),
-                request_output(0, TXHASH_31bc1c),
-                request_input(0),
-                request_output(0),
-                request_input(0),
-                request_finished(),
-            ]
-        )
+        client.set_expected_responses(expected_responses)
         _, serialized_tx = btc.sign_tx(
             client, "Testnet", [inp1], [out1], prev_txes=TX_API_TESTNET
         )
 
-    assert (
-        serialized_tx.hex()
-        == "01000000000101e5918f661488bb7f0a7d04fc1dad61b5d0bad5167a05b3a637e36ace881cbc310000000023220020fa6c73de618ec134eeec0c16f6dd04d46d4347e9a4fd0a95fd7938403a4949f9ffffffff01d071180000000000220020bcea2324dacbcde5a9db90cc26b8df9cbc72010e05cb68cf034df6f0e05239a2040047304402206bbddb45f12e31e77610fd85b50a83bad4426433b1c4860b1c5ddc0a69f803720220087b0607daab14830f4b4941f16b953b38e606ad70029bac24af7267f93c4242014730440220551a0cb6b0d5b3fa0cfd0b07bb5d751494b827b1c6a08702186696cfbc18278302204f37c382876c4117cca656654599b508f2d55fc3b083dc938e3cd8491b29719601695221036a5ec3abd10501409092246fe59c6d7a15fff1a933479483c3ba98b866c5b9742103559be875179d44e438db2c74de26e0bc9842cbdefd16018eae8a2ed989e474722103067b56aad037cd8b5f569b21f9025b76470a72dc69457813d2b76e98dc0cd01a53ae00000000"
+    assert_tx_matches(
+        serialized_tx,
+        segwit_hash="ab29be54acb0dc47a54f1451c9494ebe103a171732728eb698180b3b28773eb8",
+        hash_link="https://tbtc1.trezor.io/api/tx/b006619cf84ff4f36cfbd9a4f77a77678cc1b040d81b118c745dce5bbfe255d5",
+        tx_hex="01000000000101a660b551efbe3f6e79b181d3c4445a7c3ffc4b970f6c1f5ef2f6284a0dfaabb90300000023220020fa6c73de618ec134eeec0c16f6dd04d46d4347e9a4fd0a95fd7938403a4949f9ffffffff01905f010000000000220020bcea2324dacbcde5a9db90cc26b8df9cbc72010e05cb68cf034df6f0e05239a20400473044022046de6458d0e1d7fcc1945d6ee027d5900c7ba18183416813a9b841c5b57b7417022011cfaa89ce7f60c876d569f51080e0f9e07c09ec34fbdbc3b0e26f1028e23e2501473044022027909365f0c3d2743ba2970e74ef2c375d0ae00243e2d75d206c075d6a0f219202206a429e7e6355f8a6e957d539add1d6a24533a20f5023d19e7c2aaf25221024c501695221036a5ec3abd10501409092246fe59c6d7a15fff1a933479483c3ba98b866c5b9742103559be875179d44e438db2c74de26e0bc9842cbdefd16018eae8a2ed989e474722103067b56aad037cd8b5f569b21f9025b76470a72dc69457813d2b76e98dc0cd01a53ae00000000",
     )
 
 
