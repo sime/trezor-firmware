@@ -237,11 +237,12 @@ def assert_tx_matches(
         assert tools.tx_hash(serialized_tx).hex() == segwit_hash
     else:
         assert tools.tx_hash(serialized_tx).hex() == hash_link.split("/")[-1]
+
     if tx_hex:
         assert serialized_tx.hex() == tx_hex
 
     # TODO: we could probably do better than os.environ, this was the easiest solution
-    # (we could create a pytest option (and use config.getoption("use-blockbook")),
+    # (we could create a pytest option (and use config.getoption("check-on-chain")),
     # but then each test would need to have access to config via function argument)
     if int(os.environ.get("CHECK_ON_CHAIN", 0)):
 

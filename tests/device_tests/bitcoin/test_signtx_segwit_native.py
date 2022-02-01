@@ -31,12 +31,6 @@ TX_API_TESTNET = TxCache("Testnet")
 TXHASH_20912f = bytes.fromhex(
     "20912f98ea3ed849042efed0fdac8cb4fc301961c5988cba56902d8ffb61c337"
 )
-TXHASH_091446 = bytes.fromhex(
-    "09144602765ce3dd8f4329445b20e3684e948709c5cdcaf12da3bb079c99448a"
-)
-TXHASH_a345b8 = bytes.fromhex(
-    "a345b85759b385c6446055e4c3baa77e8161a65009dc009489b48aa6587ce348"
-)
 TXHASH_ec16dc = bytes.fromhex(
     "ec16dc5a539c5d60001a7471c37dbb0b5294c289c77df8bd07870b30d73e2231"
 )
@@ -54,6 +48,9 @@ TXHASH_65047a = bytes.fromhex(
 )
 TXHASH_b9abfa = bytes.fromhex(
     "b9abfa0d4a28f6f25e1f6c0f974bfc3f7c5a44c4d381b1796e3fbeef51b560a6"
+)
+TXHASH_1c022d = bytes.fromhex(
+    "1c022d9da3aa8bc8cf2a617c42c8f2c343e810af76b3ab9770c5ab6ca54ddab5"
 )
 
 
@@ -721,25 +718,26 @@ def test_multisig_mismatch_inputs_single(client: Client):
     )
 
     inp1 = messages.TxInputType(
+        # tb1qkvwu9g3k2pdxewfqr7syz89r3gj557l3uuf9r9
         address_n=parse_path("m/84h/1h/0h/0/0"),
-        amount=12_300_000,
-        prev_hash=TXHASH_091446,
-        prev_index=0,
+        amount=100_000,
+        prev_hash=TXHASH_1c022d,
+        prev_index=1,
         script_type=messages.InputScriptType.SPENDWITNESS,
     )
 
     inp2 = messages.TxInputType(
         address_n=parse_path("m/84h/1h/0h/0/0"),
-        prev_hash=TXHASH_a345b8,
-        prev_index=0,
+        prev_hash=TXHASH_1c022d,
+        prev_index=2,
         script_type=messages.InputScriptType.SPENDWITNESS,
         multisig=multisig_in,
-        amount=100,
+        amount=100_000,
     )
 
     out1 = messages.TxOutputType(
         address="2N4Q5FhU2497BryFfUgbqkAJE87aKHUhXMp",
-        amount=5_000_000,
+        amount=50_000,
         script_type=messages.OutputScriptType.PAYTOADDRESS,
     )
 
@@ -747,7 +745,7 @@ def test_multisig_mismatch_inputs_single(client: Client):
         address_n=parse_path("m/84h/1h/0h/1/0"),
         script_type=messages.OutputScriptType.PAYTOWITNESS,
         multisig=multisig_out,
-        amount=12_300_000 + 100 - 5_000_000 - 10_000,
+        amount=100_000 + 100_000 - 50_000 - 10_000,
     )
 
     with client:
@@ -762,14 +760,17 @@ def test_multisig_mismatch_inputs_single(client: Client):
                 messages.ButtonRequest(code=B.ConfirmOutput),
                 messages.ButtonRequest(code=B.SignTx),
                 request_input(0),
-                request_meta(TXHASH_091446),
-                request_input(0, TXHASH_091446),
-                request_output(0, TXHASH_091446),
-                request_output(1, TXHASH_091446),
+                request_meta(TXHASH_1c022d),
+                request_input(0, TXHASH_1c022d),
+                request_output(0, TXHASH_1c022d),
+                request_output(1, TXHASH_1c022d),
+                request_output(2, TXHASH_1c022d),
                 request_input(1),
-                request_meta(TXHASH_a345b8),
-                request_input(0, TXHASH_a345b8),
-                request_output(0, TXHASH_a345b8),
+                request_meta(TXHASH_1c022d),
+                request_input(0, TXHASH_1c022d),
+                request_output(0, TXHASH_1c022d),
+                request_output(1, TXHASH_1c022d),
+                request_output(2, TXHASH_1c022d),
                 request_input(0),
                 request_input(1),
                 request_output(0),
@@ -784,7 +785,9 @@ def test_multisig_mismatch_inputs_single(client: Client):
             client, "Testnet", [inp1, inp2], [out1, out2], prev_txes=TX_API_TESTNET
         )
 
-    assert (
-        serialized_tx.hex()
-        == "010000000001028a44999c07bba32df1cacdc50987944e68e3205b4429438fdde35c76024614090000000000ffffffff48e37c58a68ab4899400dc0950a661817ea7bac3e4556044c685b35957b845a30000000000ffffffff02404b4c000000000017a9147a55d61848e77ca266e79a39bfc85c580a6426c987f43c6f0000000000220020733ecfbbe7e47a74dde6c7645b60cdf627e90a585cde7733bc7fdaf9fe30b37402473044022037dc98b16be542a6e3e1ab32007a74192c43f2498170cc5e1dffb6847e3663e402206715102d0eb59e6461a97c78eb40a8679a04a8921fdafef25f0d3d16cc65de39012103adc58245cf28406af0ef5cc24b8afba7f1be6c72f279b642d85c48798685f8620300473044022070a24bcb00041cbed465f1f546bc59e1e353a6e182393932d5ba96e20bc32ef702202ddc76a97c01465692d5b0a0a61d653f64b9ea833af1810022110fd4d505ff950147512103505f0d82bbdd251511591b34f36ad5eea37d3220c2b81a1189084431ddb3aa3d2103adc58245cf28406af0ef5cc24b8afba7f1be6c72f279b642d85c48798685f86252ae00000000"
+    assert_tx_matches(
+        serialized_tx,
+        segwit_hash="b9f141a2ee60ff5b0d23c4cf07a724bcf6e5be80e577cbba2053c162286f08f2",
+        hash_link="https://tbtc1.trezor.io/api/tx/d3b2ec2a540363ffbb231c6cf0a311ec84c8404c7ec2819c146dfb90a69c593a",
+        tx_hex="01000000000102b5da4da56cabc57097abb376af10e843c3f2c8427c612acfc88baaa39d2d021c0100000000ffffffffb5da4da56cabc57097abb376af10e843c3f2c8427c612acfc88baaa39d2d021c0200000000ffffffff0250c300000000000017a9147a55d61848e77ca266e79a39bfc85c580a6426c987e022020000000000220020733ecfbbe7e47a74dde6c7645b60cdf627e90a585cde7733bc7fdaf9fe30b3740247304402207076385a688713bd380d7e01858254161c11981a0f549098c77ab8afbaec38b40220713854182527e3f32e6910b7a4c5154969039e665bdec0ab4e12e2d3a9543e65012103adc58245cf28406af0ef5cc24b8afba7f1be6c72f279b642d85c48798685f86203004730440220096cf4bff1590e005ff86cf10462b320b9b0eccfc45b8ea4badd276ad9cc536702207502c0dc037f64c58fde74925b4593dcd842d76085538083b6450bf9e73384420147512103505f0d82bbdd251511591b34f36ad5eea37d3220c2b81a1189084431ddb3aa3d2103adc58245cf28406af0ef5cc24b8afba7f1be6c72f279b642d85c48798685f86252ae00000000",
     )
