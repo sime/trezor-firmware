@@ -311,6 +311,20 @@ def test_attack_change_input(client: TrezorClientDebugLink):
 
     with client:
         client.set_filter(messages.TxAck, attack_processor)
+        client.set_expected_responses(
+            [
+                request_input(0),
+                request_output(0),
+                messages.ButtonRequest(code=B.ConfirmOutput),
+                request_output(1),
+                messages.ButtonRequest(code=B.SignTx),
+                request_input(0),
+                request_meta(TXHASH_509e08),
+                request_input(0, TXHASH_509e08),
+                request_output(0, TXHASH_509e08),
+                messages.Failure(code=messages.FailureType.DataError),
+            ]
+        )
         with pytest.raises(TrezorFailure) as exc:
             btc.sign_tx(
                 client,
