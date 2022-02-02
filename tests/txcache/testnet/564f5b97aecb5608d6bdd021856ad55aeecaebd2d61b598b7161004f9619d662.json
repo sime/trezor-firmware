@@ -1,0 +1,70 @@
+{
+  "bin_outputs": [
+    {
+      "amount": 10000,
+      "script_pubkey": "00144b1e678b0da17e2fa1a303eb3f78208840dc3ebb"
+    },
+    {
+      "amount": 10000,
+      "script_pubkey": "00144dbe98e3f6cb327ade8f985f3b5c77ee0a2f9031"
+    },
+    {
+      "amount": 10000,
+      "script_pubkey": "00148b2da1e1dd669355f5bc589126313c5d59548e9c"
+    },
+    {
+      "amount": 10000,
+      "script_pubkey": "00148de40f31f2f984f429959cd61d7b8946a8fa1455"
+    },
+    {
+      "amount": 10000,
+      "script_pubkey": "76a9144b1e678b0da17e2fa1a303eb3f78208840dc3ebb88ac"
+    },
+    {
+      "amount": 10000,
+      "script_pubkey": "76a9144dbe98e3f6cb327ade8f985f3b5c77ee0a2f903188ac"
+    },
+    {
+      "amount": 10000,
+      "script_pubkey": "76a9148b2da1e1dd669355f5bc589126313c5d59548e9c88ac"
+    },
+    {
+      "amount": 10000,
+      "script_pubkey": "76a9148de40f31f2f984f429959cd61d7b8946a8fa145588ac"
+    },
+    {
+      "amount": 10000,
+      "script_pubkey": "a9141609126a7f5f89e6ff7401539846262bce98bb5e87"
+    },
+    {
+      "amount": 10000,
+      "script_pubkey": "a9141986380d48c81dad7f45cb809f2c3a00a503f27f87"
+    },
+    {
+      "amount": 10000,
+      "script_pubkey": "a914611a1d88754e1de322d9ddd1bed97ec0c5eb831d87"
+    },
+    {
+      "amount": 10000,
+      "script_pubkey": "a914dd34270922798eee4afe17222cab88c11b03bdc687"
+    },
+    {
+      "amount": 10000,
+      "script_pubkey": "a914fa39c641068eb23e00e99ce4962489b5728fe92487"
+    },
+    {
+      "amount": 3743440,
+      "script_pubkey": "0014a76ac5e7bb20619a2bc636ca52d2fa66761c1e41"
+    }
+  ],
+  "inputs": [
+    {
+      "prev_hash": "cf52d7ece8f614a70e0da43eaf9fa1bb9e7ebdd14feca3278d8899071ac44948",
+      "prev_index": 4,
+      "script_sig": "",
+      "sequence": 4294967293
+    }
+  ],
+  "lock_time": 0,
+  "version": 1
+}
