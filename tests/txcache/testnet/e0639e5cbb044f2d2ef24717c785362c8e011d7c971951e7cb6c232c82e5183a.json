@@ -1,0 +1,46 @@
+{
+  "bin_outputs": [
+    {
+      "amount": 2222,
+      "script_pubkey": "a91412a1da9061e6c2fe0a058d288d279242f6c9021f87"
+    },
+    {
+      "amount": 2222,
+      "script_pubkey": "a91415240edc7c196bcaab2baee2c0b19bfc88c88d9087"
+    },
+    {
+      "amount": 2222,
+      "script_pubkey": "a9143548af154c3423c91a9bd80d14f64c832f30e50187"
+    },
+    {
+      "amount": 2222,
+      "script_pubkey": "a9146b167fd9f46916d39444d0c61af5aa53cf22c53f87"
+    },
+    {
+      "amount": 2222,
+      "script_pubkey": "a9148e68da3c1c9f039140b590cd582599fc6215ee8a87"
+    },
+    {
+      "amount": 2222,
+      "script_pubkey": "a914d9f5f4ac1045ce81edda996b357e65f4b0e4f3df87"
+    },
+    {
+      "amount": 2222,
+      "script_pubkey": "a914f7d0757c50cdbf185aa084ed74df3a7b16466c0f87"
+    },
+    {
+      "amount": 31230,
+      "script_pubkey": "0014b0055645ce8e72a21679eac6bdef0aeba5f6962b"
+    }
+  ],
+  "inputs": [
+    {
+      "prev_hash": "af930633222d8be0a3a010dba9bc9346a8cf51e6d8f6885aaa56cfb6e98d3dfe",
+      "prev_index": 1,
+      "script_sig": "",
+      "sequence": 4294967293
+    }
+  ],
+  "lock_time": 0,
+  "version": 1
+}
