@@ -239,11 +239,11 @@ def test_attack_change_input(client: TrezorClientDebugLink):
     attacker to provide a 1-of-2 multisig change address. When `input_real`
     is provided in the signing phase, an error must occur.
 
-    NOTE: previously this test was making sure that MatchChecker's check_input()
-    function catches the change in the account type. Recently this check was replaced
-    by verifying the scriptPubKey.
-    The goal of the test was to replicate the "Malicious change in mixed transactions" attack in
+    NOTE: The goal of this test is to replicate the "Malicious change in mixed transactions" attack in
     https://blog.trezor.io/details-of-firmware-updates-for-trezor-one-version-1-9-0-and-trezor-model-t-version-2-3-0-46deb141fc09
+    Previously this test was making sure that MatchChecker's check_input() function
+    catches the change in the account type. After scriptPubKey verification was introduced,
+    the attack is caught earlier by the scriptPubKey mismatch.
     """
     address_n = parse_path("48h/1h/0h/1h/0/0")  # 2NErUdruXmM8o8bQySrzB3WdBRcmc5br4E8
     attacker_multisig_public_key = bytes.fromhex(
