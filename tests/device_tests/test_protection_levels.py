@@ -26,8 +26,8 @@ from .signtx import request_finished, request_input, request_meta, request_outpu
 
 B = messages.ButtonRequestType
 
-TXHASH_d5f65e = bytes.fromhex(
-    "d5f65ee80147b4bcc70b75e4bbf2d7382021b871bd8867ef8fa525ef50864882"
+TXHASH_50f6f1 = bytes.fromhex(
+    "50f6f1209ca92d7359564be803cb2c932cde7d370f7cee50fd1fad6790f6206d"
 )
 
 PIN4 = "1234"
@@ -338,19 +338,18 @@ def test_verify_message_t2(client):
 
 
 def test_signtx(client):
-    # tx: d5f65ee80147b4bcc70b75e4bbf2d7382021b871bd8867ef8fa525ef50864882
-    # input 0: 0.0039 BTC
+    # input tx: 50f6f1209ca92d7359564be803cb2c932cde7d370f7cee50fd1fad6790f6206d
 
     inp1 = messages.TxInputType(
-        address_n=parse_path("44h/0h/0h/0/0"),
-        amount=390000,
-        prev_hash=TXHASH_d5f65e,
-        prev_index=0,
+        address_n=parse_path("44h/0h/0h/0/5"),  # 1GA9u9TfCG7SWmKCveBumdA1TZpfom6ZdJ
+        amount=50_000,
+        prev_hash=TXHASH_50f6f1,
+        prev_index=1,
     )
 
     out1 = messages.TxOutputType(
         address="1MJ2tj2ThBE62zXbBYA5ZaN3fdve5CPAz1",
-        amount=390000 - 10000,
+        amount=50_000 - 10_000,
         script_type=messages.OutputScriptType.PAYTOADDRESS,
     )
 
@@ -366,10 +365,10 @@ def test_signtx(client):
                 messages.ButtonRequest(code=B.ConfirmOutput),
                 messages.ButtonRequest(code=B.SignTx),
                 request_input(0),
-                request_meta(TXHASH_d5f65e),
-                request_input(0, TXHASH_d5f65e),
-                request_input(1, TXHASH_d5f65e),
-                request_output(0, TXHASH_d5f65e),
+                request_meta(TXHASH_50f6f1),
+                request_input(0, TXHASH_50f6f1),
+                request_output(0, TXHASH_50f6f1),
+                request_output(1, TXHASH_50f6f1),
                 request_input(0),
                 request_output(0),
                 request_output(0),
