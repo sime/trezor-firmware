@@ -37,8 +37,8 @@ TXHASH_157041 = bytes.fromhex(
 TXHASH_d5f65e = bytes.fromhex(
     "d5f65ee80147b4bcc70b75e4bbf2d7382021b871bd8867ef8fa525ef50864882"
 )
-TXHASH_d6da21 = bytes.fromhex(
-    "d6da21677d7cca5f42fbc7631d062c9ae918a0254f7c6c22de8e8cb7fd5b8236"
+TXHASH_005f6f = bytes.fromhex(  # FAKE transaction (coinbase)
+    "005f6f7ff4b70aa09a15b3bc36607d378fad104c4efa4f0a1c8e970538622b3e"
 )
 TXHASH_d2dcda = bytes.fromhex(
     "d2dcdaf547ea7f57a713c607f15e883ddc4a98167ee2c43ed953c53cb5153e24"
@@ -980,10 +980,14 @@ def test_attack_change_input_address(client):
 
 
 def test_spend_coinbase(client):
+    # NOTE: the input transaction is not real
+    # We did not have any coinbase transaction at connected with `all all` seed,
+    # so it was artificially created for the test purpose
+
     inp1 = messages.TxInputType(
         address_n=parse_path("44h/1h/0h/0/0"),  # mvbu1Gdy8SUjTenqerxUaZyYjmveZvt33q
         amount=2_500_278_230,
-        prev_hash=TXHASH_d6da21,
+        prev_hash=TXHASH_005f6f,
         prev_index=0,
     )
 
@@ -1001,9 +1005,9 @@ def test_spend_coinbase(client):
                 messages.ButtonRequest(code=B.ConfirmOutput),
                 messages.ButtonRequest(code=B.SignTx),
                 request_input(0),
-                request_meta(TXHASH_d6da21),
-                request_input(0, TXHASH_d6da21),
-                request_output(0, TXHASH_d6da21),
+                request_meta(TXHASH_005f6f),
+                request_input(0, TXHASH_005f6f),
+                request_output(0, TXHASH_005f6f),
                 request_input(0),
                 request_output(0),
                 request_output(0),
@@ -1016,8 +1020,8 @@ def test_spend_coinbase(client):
 
     # Transaction does not exist on the blockchain, not using assert_tx_matches()
     assert (
-        tx_hash(serialized_tx).hex()
-        == "cf5a8ad5a4f0211953e0d40d9145d6651f0d90203e52913e780065bd00840da3"
+        serialized_tx.hex()
+        == "01000000013e2b623805978e1c0a4ffa4e4c10ad8f377d6036bcb3159aa00ab7f47f6f5f00000000006b483045022100a9a3e743017256fa7da39f73e7fd477edd9ba173055b32c99c99da59c23f2cde022023e4d28392f8a11967eaf8548883f9ffbb08dc7722937eb91db732fa1bef4b5b0121030e669acac1f280d1ddf441cd2ba5e97417bf2689e4bbec86df4f831bf9f7ffd0ffffffff01c6100795000000001976a9143d2496e67f5f57a924353da42d4725b318e7a8ea88ac00000000"
     )
 
 
