@@ -41,6 +41,18 @@ impl Button {
         self
     }
 
+    pub fn empty(area: Rect, styles: ButtonStyleSheet) -> Self {
+        Self::with_text(area, b"", styles)
+    }
+
+    pub fn enable_if(&mut self, ctx: &mut EventCtx, enable: bool) {
+        if enable {
+            self.enable(ctx);
+        } else {
+            self.disable(ctx);
+        }
+    }
+
     pub fn enable(&mut self, ctx: &mut EventCtx) {
         self.set(ctx, State::Initial)
     }
@@ -68,11 +80,19 @@ impl Button {
         matches!(self.state, State::Disabled)
     }
 
+    pub fn set_stylesheet(&mut self, styles: ButtonStyleSheet) {
+        self.styles = styles;
+    }
+
     pub fn content(&self) -> &ButtonContent {
         &self.content
     }
 
-    fn style(&self) -> &ButtonStyle {
+    pub fn area(&self) -> Rect {
+        self.area
+    }
+
+    pub fn style(&self) -> &ButtonStyle {
         match self.state {
             State::Initial | State::Released => self.styles.normal,
             State::Pressed => self.styles.active,
@@ -84,6 +104,58 @@ impl Button {
         if self.state != state {
             self.state = state;
             ctx.request_paint();
+        }
+    }
+
+    pub fn paint_background(&self, style: &ButtonStyle) {
+        if style.border_width > 0 {
+            // Paint the border and a smaller background on top of it.
+            display::rounded_rect(
+                self.area,
+                style.border_color,
+                style.background_color,
+                style.border_radius,
+            );
+            display::rounded_rect(
+                self.area.inset(style.border_width),
+                style.button_color,
+                style.border_color,
+                style.border_radius,
+            );
+        } else {
+            // We do not need to draw an explicit border in this case, just a
+            // bigger background.
+            display::rounded_rect(
+                self.area,
+                style.button_color,
+                style.background_color,
+                style.border_radius,
+            );
+        }
+    }
+
+    pub fn paint_content(&self, style: &ButtonStyle) {
+        match &self.content {
+            ButtonContent::Text(text) => {
+                let width = display::text_width(text, style.font);
+                let height = display::text_height();
+                let start_of_baseline = self.area.center() + Offset::new(-width / 2, height / 2);
+                display::text(
+                    start_of_baseline,
+                    text,
+                    style.font,
+                    style.text_color,
+                    style.button_color,
+                );
+            }
+            ButtonContent::Icon(icon) => {
+                display::icon(
+                    self.area.center(),
+                    icon,
+                    style.text_color,
+                    style.button_color,
+                );
+            }
         }
     }
 }
@@ -147,54 +219,8 @@ impl Component for Button {
 
     fn paint(&mut self) {
         let style = self.style();
-
-        if style.border_width > 0 {
-            // Paint the border and a smaller background on top of it.
-            display::rounded_rect(
-                self.area,
-                style.border_color,
-                style.background_color,
-                style.border_radius,
-            );
-            display::rounded_rect(
-                self.area.inset(style.border_width),
-                style.button_color,
-                style.border_color,
-                style.border_radius,
-            );
-        } else {
-            // We do not need to draw an explicit border in this case, just a
-            // bigger background.
-            display::rounded_rect(
-                self.area,
-                style.button_color,
-                style.background_color,
-                style.border_radius,
-            );
-        }
-
-        match &self.content {
-            ButtonContent::Text(text) => {
-                let width = display::text_width(text, style.font);
-                let height = display::text_height();
-                let start_of_baseline = self.area.center() + Offset::new(-width / 2, height / 2);
-                display::text(
-                    start_of_baseline,
-                    text,
-                    style.font,
-                    style.text_color,
-                    style.button_color,
-                );
-            }
-            ButtonContent::Icon(icon) => {
-                display::icon(
-                    self.area.center(),
-                    icon,
-                    style.text_color,
-                    style.button_color,
-                );
-            }
-        }
+        self.paint_background(&style);
+        self.paint_content(&style);
     }
 }
 
