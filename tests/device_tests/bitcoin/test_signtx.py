@@ -20,7 +20,7 @@ import pytest
 
 from trezorlib import btc, device, messages
 from trezorlib.exceptions import TrezorFailure
-from trezorlib.tools import H_, parse_path, tx_hash
+from trezorlib.tools import H_, parse_path
 
 from ...common import assert_tx_matches
 from ...tx_cache import TxCache
