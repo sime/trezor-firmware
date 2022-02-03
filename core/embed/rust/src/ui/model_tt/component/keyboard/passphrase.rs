@@ -9,7 +9,7 @@ use crate::{
     },
 };
 
-use super::{
+use crate::ui::model_tt::component::{
     button::{Button, ButtonContent, ButtonMsg::Clicked},
     swipe::{Swipe, SwipeDirection},
     theme,
