@@ -147,21 +147,12 @@ impl Bip39Keyboard {
         })
     }
 
-    /// Key button was clicked. If this button is pending, let's cycle the
-    /// pending character in textbox. If not, let's just append the first
-    /// character.
-    fn on_key_click(&mut self, ctx: &mut EventCtx, clicked_key: usize) {
-        // Mutate the text input and get the completion mask and the currently pending
-        // key.
-        let (mask, pending_key) = self.input.mutate(ctx, |ctx, input| {
-            input
-                .multi_tap
-                .click_key(ctx, clicked_key, KEYS[clicked_key], &mut input.textbox);
-            input.complete_word_from_dictionary();
-            (input.completion_mask(), input.multi_tap.pending_key())
-        });
+    /// Either enable or disable the key buttons, depending on the dictionary
+    /// completion mask and the pending key.
+    fn toggle_key_buttons(&mut self, ctx: &mut EventCtx) {
+        let pending_key = self.input.inner().multi_tap.pending_key();
+        let mask = self.input.inner().completion_mask();
 
-        // Either enable or disable the key buttons.
         for (key, btn) in self.keys.iter_mut().enumerate() {
             // Currently pending key is always enabled.
             let key_is_pending = pending_key == Some(key);
@@ -173,6 +164,32 @@ impl Bip39Keyboard {
         }
     }
 
+    /// Compute a bitmask of all letters contained in given key text. Lowest bit
+    /// is 'a', second lowest 'b', etc.
+    fn compute_mask(key_text: &[u8]) -> u32 {
+        let mut mask = 0;
+        for ch in key_text {
+            // We assume the key text is lower-case alphabetic ASCII, making the subtraction
+            // and the shift panic-free.
+            mask |= 1 << (ch - b'a');
+        }
+        mask
+    }
+
+    /// Key button was clicked. If this button is pending, let's cycle the
+    /// pending character in textbox. If not, let's just append the first
+    /// character.
+    fn on_key_click(&mut self, ctx: &mut EventCtx, clicked_key: usize) {
+        self.input.mutate(ctx, |ctx, input| {
+            input
+                .multi_tap
+                .click_key(ctx, clicked_key, KEYS[clicked_key], &mut input.textbox);
+            input.complete_word_from_dictionary();
+            (input.completion_mask(), input.multi_tap.pending_key())
+        });
+        self.toggle_key_buttons(ctx);
+    }
+
     /// Backspace button was clicked, let's delete the last character of input
     /// and clear the pending marker.
     fn on_backspace_click(&mut self, ctx: &mut EventCtx) {
@@ -180,12 +197,14 @@ impl Bip39Keyboard {
             input.textbox.delete_last(ctx);
             input.multi_tap.clear_pending_state(ctx);
         });
+        self.toggle_key_buttons(ctx);
     }
 
     /// Input button was clicked.  If the content matches the suggested word,
     /// let's confirm it, otherwise just auto-complete.
     fn on_input_click(&mut self, ctx: &mut EventCtx) -> Option<Bip39KeyboardMsg> {
-        self.input
+        let msg = self
+            .input
             .mutate(ctx, |ctx, input| match input.completed_word {
                 Some(word) if word == input.textbox.content() => {
                     input.textbox.clear(ctx);
@@ -196,7 +215,9 @@ impl Bip39Keyboard {
                     None
                 }
                 None => None,
-            })
+            });
+        self.toggle_key_buttons(ctx);
+        msg
     }
 
     /// Timeout occurred.  If we can auto-complete current input, let's just
@@ -209,16 +230,7 @@ impl Bip39Keyboard {
             }
             input.multi_tap.clear_pending_state(ctx);
         });
-    }
-
-    fn compute_mask(key_text: &[u8]) -> u32 {
-        let mut mask = 0;
-        for ch in key_text {
-            // We assume the key text is lower-case alphabetic ASCII, making the subtraction
-            // and the shift panic-free.
-            mask |= 1 << (ch - b'a');
-        }
-        mask
+        self.toggle_key_buttons(ctx);
     }
 }
 
