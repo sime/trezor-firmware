@@ -1,11 +1,10 @@
 mod button;
 mod confirm;
 mod dialog;
+mod keyboard;
 mod loader;
 mod page;
 mod paginated;
-mod passphrase;
-mod pin;
 mod swipe;
 
 pub use button::{Button, ButtonContent, ButtonMsg, ButtonStyle, ButtonStyleSheet};
