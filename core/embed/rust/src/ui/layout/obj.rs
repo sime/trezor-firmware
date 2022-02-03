@@ -100,10 +100,10 @@ struct LayoutObjInner {
 
 impl LayoutObj {
     /// Create a new `LayoutObj`, wrapping a root component.
-    pub fn new<T>(root: T) -> Result<Gc<Self>, Error> 
+    pub fn new<T>(root: T) -> Result<Gc<Self>, Error>
     where
         T: ComponentMsgObj + 'static,
-     {
+    {
         // Let's wrap the root component into a `Child` to maintain the top-level
         // invalidation logic.
         let wrapped_root = Child::new(root);
