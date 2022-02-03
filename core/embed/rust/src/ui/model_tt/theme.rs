@@ -26,6 +26,7 @@ pub const RED: Color = Color::rgb(205, 73, 73); // dark-coral
 pub const YELLOW: Color = Color::rgb(193, 144, 9); // ochre
 pub const GREEN: Color = Color::rgb(57, 168, 20); // grass-green
 pub const BLUE: Color = Color::rgb(0, 86, 190); // blue
+pub const GREY: Color = Color::rgb(158, 158, 158);
 pub const GREY_LIGHT: Color = Color::rgb(168, 168, 168); // greyish
 pub const GREY_DARK: Color = Color::rgb(51, 51, 51); // black
 
@@ -39,6 +40,7 @@ pub const ICON_SIZE: i32 = 16;
 pub const ICON_CANCEL: &[u8] = include_res!("cancel.toif");
 pub const ICON_CONFIRM: &[u8] = include_res!("confirm.toif");
 pub const ICON_SPACE: &[u8] = include_res!("space.toif");
+pub const ICON_BACK: &[u8] = include_res!("left.toif");
 
 pub fn label_default() -> LabelStyle {
     LabelStyle {
