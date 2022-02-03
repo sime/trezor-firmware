@@ -3,11 +3,7 @@ use core::convert::{TryFrom, TryInto};
 use crate::{
     error::Error,
     micropython::{buffer::Buffer, map::Map, obj::Obj, qstr::Qstr},
-    ui::{
-        component::{Child, FormattedText},
-        display,
-        layout::obj::LayoutObj,
-    },
+    ui::{component::FormattedText, display, layout::obj::LayoutObj},
     util,
 };
 
