@@ -82,7 +82,7 @@ impl Bip39Keyboard {
             // Keys that contain letters from the completion mask are enabled as well.
             let key_matches_mask = Self::compute_mask(KEYS[key]) & mask != 0;
             btn.mutate(ctx, |ctx, b| {
-                b.enable_if(ctx, key_is_pending || key_matches_mask)
+                b.enabled(ctx, key_is_pending || key_matches_mask)
             });
         }
     }

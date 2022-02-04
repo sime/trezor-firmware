@@ -45,14 +45,6 @@ impl Button {
         Self::with_text(area, b"")
     }
 
-    pub fn enable_if(&mut self, ctx: &mut EventCtx, enable: bool) {
-        if enable {
-            self.enable(ctx);
-        } else {
-            self.disable(ctx);
-        }
-    }
-
     pub fn enable(&mut self, ctx: &mut EventCtx) {
         self.set(ctx, State::Initial)
     }
