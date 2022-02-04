@@ -2,11 +2,11 @@
   "bin_outputs": [
     {
       "amount": 24000,
-      "script_pubkey": "76a91400741952f6a6eab5394f366db5cc5a54b0c2429f88ac"
+      "script_pubkey": "a914756c06d7e77de3950a6124f026d8e1a2464b3ecf87"
     },
     {
       "amount": 24000,
-      "script_pubkey": "a914756c06d7e77de3950a6124f026d8e1a2464b3ecf87"
+      "script_pubkey": "a914dfc8c2dda26f7151ed7df8aeeca24089e6410fdd87"
     }
   ],
   "inputs": [

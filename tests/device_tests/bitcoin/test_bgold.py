@@ -29,11 +29,23 @@ TX_API = TxCache("Bgold")
 TXHASH_25526b = bytes.fromhex(
     "25526bf06c76ad3082bba930cf627cdd5f1b3cd0b9907dd7ff1a07e14addc985"
 )
-TXHASH_db77c2 = bytes.fromhex(
-    "db77c2461b840e6edbe7f9280043184a98e020d9795c1b65cb7cef2551a8fb18"
-)
 TXHASH_f55c5b = bytes.fromhex(
     "f55c5bc925eb2a0bf9de0ac142b24bed81ec46dd2151d5f69728070eaea1aded"
+)
+TXHASH_7f1f6b = bytes.fromhex(  # FAKE tx
+    "7f1f6bfe8d5a23e038c58bdcf47e6eb3b5ddb93300176b273564951105206b39"
+)
+TXHASH_db7239 = bytes.fromhex(  # FAKE tx
+    "db7239c358352c10996115b3de9e3f37ea0a97be4ea8c4b9e08996e257a21d0e"
+)
+TXHASH_6f0398 = bytes.fromhex(  # FAKE tx
+    "6f0398f8bac639312afc2e40210ce5253535f92326167f40e1f38dd7047b00ec"
+)
+TXHASH_aae50f = bytes.fromhex(  # FAKE tx
+    "aae50f8dc1c19c35517e5bbc2214d38e1ce4b4ff7cb3151b5b31bf0f723f8e06"
+)
+TXHASH_a63dbe = bytes.fromhex(  # FAKE tx
+    "a63dbedd8cd284bf0d3c468e84b9b0eeb14c3a08824eab8f80e7723a299f30db"
 )
 
 pytestmark = pytest.mark.altcoin
@@ -41,10 +53,12 @@ pytestmark = pytest.mark.altcoin
 
 # All data taken from T1
 def test_send_bitcoin_gold_change(client):
+    # NOTE: fake input tx used
+
     inp1 = messages.TxInputType(
         address_n=parse_path("44'/156'/0'/0/0"),
         amount=1252382934,
-        prev_hash=TXHASH_25526b,
+        prev_hash=TXHASH_6f0398,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDADDRESS,
     )
@@ -67,10 +81,10 @@ def test_send_bitcoin_gold_change(client):
                 messages.ButtonRequest(code=B.ConfirmOutput),
                 messages.ButtonRequest(code=B.SignTx),
                 request_input(0),
-                request_meta(TXHASH_25526b),
-                request_input(0, TXHASH_25526b),
-                request_output(0, TXHASH_25526b),
-                request_output(1, TXHASH_25526b),
+                request_meta(TXHASH_6f0398),
+                request_input(0, TXHASH_6f0398),
+                request_output(0, TXHASH_6f0398),
+                request_output(1, TXHASH_6f0398),
                 request_input(0),
                 request_output(0),
                 request_output(1),
@@ -83,15 +97,17 @@ def test_send_bitcoin_gold_change(client):
 
     assert (
         btc_hash(serialized_tx)[::-1].hex()
-        == "39a0716c361610724c7c40916baa20808cbdd7538b6c38689ce80cb73e7f51d1"
+        == "58fccf99181283bbde5f2634fed0bff490a02df0b61bf50742a0437107d13f54"
     )
 
 
 def test_send_bitcoin_gold_nochange(client):
+    # NOTE: fake input tx used
+
     inp1 = messages.TxInputType(
-        address_n=parse_path("44'/156'/0'/1/0"),
+        address_n=parse_path("44'/156'/0'/0/0"),
         amount=1252382934,
-        prev_hash=TXHASH_25526b,
+        prev_hash=TXHASH_6f0398,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDADDRESS,
     )
@@ -99,7 +115,7 @@ def test_send_bitcoin_gold_nochange(client):
         address_n=parse_path("44'/156'/0'/0/1"),
         # 1LRspCZNFJcbuNKQkXgHMDucctFRQya5a3
         amount=38448607,
-        prev_hash=TXHASH_db77c2,
+        prev_hash=TXHASH_aae50f,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDADDRESS,
     )
@@ -117,15 +133,15 @@ def test_send_bitcoin_gold_nochange(client):
                 messages.ButtonRequest(code=B.ConfirmOutput),
                 messages.ButtonRequest(code=B.SignTx),
                 request_input(0),
-                request_meta(TXHASH_25526b),
-                request_input(0, TXHASH_25526b),
-                request_output(0, TXHASH_25526b),
-                request_output(1, TXHASH_25526b),
+                request_meta(TXHASH_6f0398),
+                request_input(0, TXHASH_6f0398),
+                request_output(0, TXHASH_6f0398),
+                request_output(1, TXHASH_6f0398),
                 request_input(1),
-                request_meta(TXHASH_db77c2),
-                request_input(0, TXHASH_db77c2),
-                request_input(1, TXHASH_db77c2),
-                request_output(0, TXHASH_db77c2),
+                request_meta(TXHASH_aae50f),
+                request_input(0, TXHASH_aae50f),
+                request_input(1, TXHASH_aae50f),
+                request_output(0, TXHASH_aae50f),
                 request_input(0),
                 request_input(1),
                 request_output(0),
@@ -138,20 +154,22 @@ def test_send_bitcoin_gold_nochange(client):
 
     assert (
         btc_hash(serialized_tx)[::-1].hex()
-        == "ac9d452b900eb747d3137e1f3044bb0f46efaeb6e0fc8c27b02d1d08d238a904"
+        == "77b595d25ed2a4d08fee9e9219e48def9f26f3e0945fd370c445aba5b72888d4"
     )
 
 
 def test_attack_change_input(client):
+    # NOTE: fake input tx used
+
     inp1 = messages.TxInputType(
-        address_n=parse_path("44'/156'/11'/0/0"),
+        address_n=parse_path("44'/156'/0'/0/0"),
         amount=1252382934,
-        prev_hash=TXHASH_25526b,
+        prev_hash=TXHASH_6f0398,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDADDRESS,
     )
     out1 = messages.TxOutputType(
-        address_n=parse_path("44'/156'/11'/1/0"),
+        address_n=parse_path("44'/156'/0'/1/0"),
         amount=1896050,
         script_type=messages.OutputScriptType.PAYTOADDRESS,
     )
@@ -184,10 +202,10 @@ def test_attack_change_input(client):
                 messages.ButtonRequest(code=B.ConfirmOutput),
                 messages.ButtonRequest(code=B.SignTx),
                 request_input(0),
-                request_meta(TXHASH_25526b),
-                request_input(0, TXHASH_25526b),
-                request_output(0, TXHASH_25526b),
-                request_output(1, TXHASH_25526b),
+                request_meta(TXHASH_6f0398),
+                request_input(0, TXHASH_6f0398),
+                request_output(0, TXHASH_6f0398),
+                request_output(1, TXHASH_6f0398),
                 request_input(0),
                 messages.Failure(code=messages.FailureType.ProcessError),
             ]
@@ -198,6 +216,8 @@ def test_attack_change_input(client):
 
 @pytest.mark.multisig
 def test_send_btg_multisig_change(client):
+    # NOTE: fake input tx used
+
     nodes = [
         btc.get_public_node(
             client, parse_path(f"48'/156'/{i}'/0'"), coin_name="Bgold"
@@ -217,7 +237,7 @@ def test_send_btg_multisig_change(client):
         multisig=getmultisig(0, 0, EMPTY_SIGS),
         # 33Ju286QvonBz5N1V754ZekQv4GLJqcc5R
         amount=1252382934,
-        prev_hash=TXHASH_25526b,
+        prev_hash=TXHASH_a63dbe,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDMULTISIG,
     )
@@ -241,10 +261,10 @@ def test_send_btg_multisig_change(client):
                 request_output(1),
                 messages.ButtonRequest(code=B.SignTx),
                 request_input(0),
-                request_meta(TXHASH_25526b),
-                request_input(0, TXHASH_25526b),
-                request_output(0, TXHASH_25526b),
-                request_output(1, TXHASH_25526b),
+                request_meta(TXHASH_a63dbe),
+                request_input(0, TXHASH_a63dbe),
+                request_output(0, TXHASH_a63dbe),
+                request_output(1, TXHASH_a63dbe),
                 request_input(0),
                 request_output(0),
                 request_output(1),
@@ -257,14 +277,14 @@ def test_send_btg_multisig_change(client):
 
     assert (
         signatures[0].hex()
-        == "30440220263c427e6e889c161206edee39b9b969350c154ddd8eb76d2ab8ca8e0fc083b702200fb1d0ef430fa2d0293dcbb0b237775d4f9748222a6ed9fc3ff747837b99020a"
+        == "3045022100bb9b465d2bd7a22b17adc4d8c4600282cfaced0469969f32a2d85e152a528074022030a3698f460c7c935c284f4ffa97d6e44afc200b0c38319d259d15d3deb7c5ac"
     )
 
     inp1 = messages.TxInputType(
         address_n=parse_path("48'/156'/1'/0'/0/0"),
         multisig=getmultisig(0, 0, [b"", b"", signatures[0]]),
         amount=1252382934,
-        prev_hash=TXHASH_25526b,
+        prev_hash=TXHASH_a63dbe,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDMULTISIG,
     )
@@ -279,10 +299,10 @@ def test_send_btg_multisig_change(client):
                 request_output(1),
                 messages.ButtonRequest(code=B.SignTx),
                 request_input(0),
-                request_meta(TXHASH_25526b),
-                request_input(0, TXHASH_25526b),
-                request_output(0, TXHASH_25526b),
-                request_output(1, TXHASH_25526b),
+                request_meta(TXHASH_a63dbe),
+                request_input(0, TXHASH_a63dbe),
+                request_output(0, TXHASH_a63dbe),
+                request_output(1, TXHASH_a63dbe),
                 request_input(0),
                 request_output(0),
                 request_output(1),
@@ -295,19 +315,21 @@ def test_send_btg_multisig_change(client):
 
     assert (
         signatures[0].hex()
-        == "3045022100c9094b060b4b095e78403493912b0e06ca12ffbdc0f2fbeec20b02d7eaa73f8702206813e33e04a2b9c4493ecfa2024f2e9d69b5a2ab5c10433d9ab762add5bdde27"
+        == "30440220093c9b193883cd50e81668eb80efe6f82faf01ea707c16c4c33ce1eb40419ccf02200c81b328991389b53a04fcc091365bcc71c2a5c17f62982240b39f1bdefb91f7"
     )
     assert (
         btc_hash(serialized_tx)[::-1].hex()
-        == "2677130ec0c5eea2249787fe17b85770cfb35dfce550830a7fb6c6acd9375114"
+        == "e5f0bea13c61bf0d02972bbe66f4ca107abd13803015aa785f013114ecec55b7"
     )
 
 
 def test_send_p2sh(client):
+    # NOTE: fake input tx used
+
     inp1 = messages.TxInputType(
         address_n=parse_path("49'/156'/0'/1/0"),
         amount=1252382934,
-        prev_hash=TXHASH_25526b,
+        prev_hash=TXHASH_db7239,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDP2SHWITNESS,
     )
@@ -331,10 +353,10 @@ def test_send_p2sh(client):
                 messages.ButtonRequest(code=B.ConfirmOutput),
                 messages.ButtonRequest(code=B.SignTx),
                 request_input(0),
-                request_meta(TXHASH_25526b),
-                request_input(0, TXHASH_25526b),
-                request_output(0, TXHASH_25526b),
-                request_output(1, TXHASH_25526b),
+                request_meta(TXHASH_db7239),
+                request_input(0, TXHASH_db7239),
+                request_output(0, TXHASH_db7239),
+                request_output(1, TXHASH_db7239),
                 request_input(0),
                 request_output(0),
                 request_output(1),
@@ -348,15 +370,17 @@ def test_send_p2sh(client):
 
     assert (
         btc_hash(serialized_tx)[::-1].hex()
-        == "d5732fc8a594ae3b7ba695d7b276b2186f8572b0eb157120e0ba35d3511c6060"
+        == "fe743152e9480c1e12df378d012fb969a9b97f605c25cda98f08ed6c2e418dbf"
     )
 
 
 def test_send_p2sh_witness_change(client):
+    # NOTE: fake input tx used
+
     inp1 = messages.TxInputType(
         address_n=parse_path("49'/156'/0'/1/0"),
         amount=1252382934,
-        prev_hash=TXHASH_25526b,
+        prev_hash=TXHASH_db7239,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDP2SHWITNESS,
     )
@@ -379,10 +403,10 @@ def test_send_p2sh_witness_change(client):
                 request_output(1),
                 messages.ButtonRequest(code=B.SignTx),
                 request_input(0),
-                request_meta(TXHASH_25526b),
-                request_input(0, TXHASH_25526b),
-                request_output(0, TXHASH_25526b),
-                request_output(1, TXHASH_25526b),
+                request_meta(TXHASH_db7239),
+                request_input(0, TXHASH_db7239),
+                request_output(0, TXHASH_db7239),
+                request_output(1, TXHASH_db7239),
                 request_input(0),
                 request_output(0),
                 request_output(1),
@@ -396,12 +420,14 @@ def test_send_p2sh_witness_change(client):
 
     assert (
         btc_hash(serialized_tx)[::-1].hex()
-        == "eed4ef86a408602e35ae416591f349847db38cdaddef1429a9bb0e39520d100d"
+        == "b891b4aacfe2b7d7fc7653f617faac305aeab336a73ec57b3604ede71db598d6"
     )
 
 
 @pytest.mark.multisig
 def test_send_multisig_1(client):
+    # NOTE: fake input tx used
+
     nodes = [
         btc.get_public_node(
             client, parse_path(f"49'/156'/{i}'"), coin_name="Bgold"
@@ -414,7 +440,7 @@ def test_send_multisig_1(client):
 
     inp1 = messages.TxInputType(
         address_n=parse_path("49'/156'/1'/1/0"),
-        prev_hash=TXHASH_25526b,
+        prev_hash=TXHASH_7f1f6b,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDP2SHWITNESS,
         multisig=multisig,
@@ -435,10 +461,10 @@ def test_send_multisig_1(client):
                 messages.ButtonRequest(code=B.ConfirmOutput),
                 messages.ButtonRequest(code=B.SignTx),
                 request_input(0),
-                request_meta(TXHASH_25526b),
-                request_input(0, TXHASH_25526b),
-                request_output(0, TXHASH_25526b),
-                request_output(1, TXHASH_25526b),
+                request_meta(TXHASH_7f1f6b),
+                request_input(0, TXHASH_7f1f6b),
+                request_output(0, TXHASH_7f1f6b),
+                request_output(1, TXHASH_7f1f6b),
                 request_input(0),
                 request_output(0),
                 request_input(0),
@@ -457,10 +483,10 @@ def test_send_multisig_1(client):
                 messages.ButtonRequest(code=B.ConfirmOutput),
                 messages.ButtonRequest(code=B.SignTx),
                 request_input(0),
-                request_meta(TXHASH_25526b),
-                request_input(0, TXHASH_25526b),
-                request_output(0, TXHASH_25526b),
-                request_output(1, TXHASH_25526b),
+                request_meta(TXHASH_7f1f6b),
+                request_input(0, TXHASH_7f1f6b),
+                request_output(0, TXHASH_7f1f6b),
+                request_output(1, TXHASH_7f1f6b),
                 request_input(0),
                 request_output(0),
                 request_input(0),
@@ -473,24 +499,26 @@ def test_send_multisig_1(client):
 
     assert (
         btc_hash(serialized_tx)[::-1].hex()
-        == "efa5b21916ac7ea5316c38b2d7d5520d80cbe563c58304f956ea6ddb241001d1"
+        == "98e87ee2b5254e9346f2768993950dbfc3a3a4bd084983d0fb78337f1deeca3c"
     )
 
 
 def test_send_mixed_inputs(client):
+    # NOTE: fake input tx used
     # First is non-segwit, second is segwit.
 
     inp1 = messages.TxInputType(
-        address_n=parse_path("44'/156'/11'/0/0"),
+        address_n=parse_path("44'/156'/0'/0/1"),
+        # 1LRspCZNFJcbuNKQkXgHMDucctFRQya5a3
         amount=38448607,
-        prev_hash=TXHASH_db77c2,
+        prev_hash=TXHASH_aae50f,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDADDRESS,
     )
     inp2 = messages.TxInputType(
         address_n=parse_path("49'/156'/0'/1/0"),
         amount=1252382934,
-        prev_hash=TXHASH_25526b,
+        prev_hash=TXHASH_db7239,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDP2SHWITNESS,
     )
@@ -507,16 +535,18 @@ def test_send_mixed_inputs(client):
 
     assert (
         btc_hash(serialized_tx)[::-1].hex()
-        == "2c64109fba890657e37f0782efda29bbc277dfd521658f185d302ddffcacffd2"
+        == "52b17dc977c51eac75b330fe071ebcae8adde73437e3612e7b9bb501b00df840"
     )
 
 
 @pytest.mark.skip_t1
 def test_send_btg_external_presigned(client):
+    # NOTE: fake input tx used
+
     inp1 = messages.TxInputType(
-        address_n=parse_path("44'/156'/0'/1/0"),
+        address_n=parse_path("44'/156'/0'/0/0"),
         amount=1252382934,
-        prev_hash=TXHASH_25526b,
+        prev_hash=TXHASH_6f0398,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDADDRESS,
     )
