@@ -177,6 +177,54 @@ int cryptoMessageSign(const CoinInfo *coin, HDNode *node,
   return result;
 }
 
+// Determines the script type from a non-multisig address.
+static InputScriptType address_to_script_type(const CoinInfo *coin,
+                                              const char *address) {
+  uint8_t addr_raw[MAX_ADDR_RAW_SIZE] = {0};
+  size_t addr_raw_len = 0;
+
+  // Native SegWit
+  if (coin->bech32_prefix) {
+    int witver = 0;
+    if (segwit_addr_decode(&witver, addr_raw, &addr_raw_len,
+                           coin->bech32_prefix, address)) {
+      switch (witver) {
+        case 0:
+          return InputScriptType_SPENDWITNESS;
+        case 1:
+          return InputScriptType_SPENDTAPROOT;
+        default:
+          return InputScriptType_EXTERNAL;  // unknown script type
+      }
+    }
+  }
+
+#if !BITCOIN_ONLY
+  if (coin->cashaddr_prefix &&
+      cash_addr_decode(addr_raw, &addr_raw_len, coin->cashaddr_prefix,
+                       address)) {
+    return InputScriptType_SPENDADDRESS;
+  }
+#endif
+
+  addr_raw_len = base58_decode_check(address, coin->curve->hasher_base58,
+                                     addr_raw, sizeof(addr_raw));
+
+  // P2PKH
+  if (addr_raw_len > address_prefix_bytes_len(coin->address_type) &&
+      address_check_prefix(addr_raw, coin->address_type)) {
+    return InputScriptType_SPENDADDRESS;
+  }
+
+  // P2SH
+  if (addr_raw_len > address_prefix_bytes_len(coin->address_type_p2sh) &&
+      address_check_prefix(addr_raw, coin->address_type_p2sh)) {
+    return InputScriptType_SPENDP2SHWITNESS;
+  }
+
+  return InputScriptType_EXTERNAL;  // unknown script type
+}
+
 int cryptoMessageVerify(const CoinInfo *coin, const uint8_t *message,
                         size_t message_len, const char *address,
                         const uint8_t *signature) {
@@ -206,8 +254,22 @@ int cryptoMessageVerify(const CoinInfo *coin, const uint8_t *message,
   uint8_t addr_raw[MAX_ADDR_RAW_SIZE] = {0};
   uint8_t recovered_raw[MAX_ADDR_RAW_SIZE] = {0};
 
-  // p2pkh
+  InputScriptType script_type = InputScriptType_SPENDADDRESS;
   if (signature[0] >= 27 && signature[0] <= 34) {
+    // p2pkh or no script type provided
+    script_type = address_to_script_type(coin, address);
+  } else if (signature[0] >= 35 && signature[0] <= 38) {
+    // segwit-in-p2sh
+    script_type = InputScriptType_SPENDP2SHWITNESS;
+  } else if (signature[0] >= 39 && signature[0] <= 42) {
+    // segwit
+    script_type = InputScriptType_SPENDWITNESS;
+  } else {
+    return 4;
+  }
+
+  if (script_type == InputScriptType_SPENDADDRESS) {
+    // p2pkh
     size_t len = 0;
     if (coin->cashaddr_prefix) {
       if (!cash_addr_decode(addr_raw, &len, coin->cashaddr_prefix, address)) {
@@ -223,7 +285,7 @@ int cryptoMessageVerify(const CoinInfo *coin, const uint8_t *message,
         len != address_prefix_bytes_len(coin->address_type) + 20) {
       return 2;
     }
-  } else if (signature[0] >= 35 && signature[0] <= 38) {
+  } else if (script_type == InputScriptType_SPENDP2SHWITNESS) {
     // segwit-in-p2sh
     size_t len = base58_decode_check(address, coin->curve->hasher_base58,
                                      addr_raw, MAX_ADDR_RAW_SIZE);
@@ -234,7 +296,7 @@ int cryptoMessageVerify(const CoinInfo *coin, const uint8_t *message,
         len != address_prefix_bytes_len(coin->address_type_p2sh) + 20) {
       return 2;
     }
-  } else if (signature[0] >= 39 && signature[0] <= 42) {
+  } else if (script_type == InputScriptType_SPENDWITNESS) {
     // segwit
     int witver = 0;
     size_t len = 0;
