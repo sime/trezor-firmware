@@ -185,7 +185,6 @@ impl Bip39Keyboard {
                 .multi_tap
                 .click_key(ctx, clicked_key, KEYS[clicked_key], &mut input.textbox);
             input.complete_word_from_dictionary();
-            (input.completion_mask(), input.multi_tap.pending_key())
         });
         self.toggle_key_buttons(ctx);
     }
