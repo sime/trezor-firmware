@@ -28,20 +28,20 @@ TX_CACHE_MAINNET = TxCache("Bitcoin")
 TX_CACHE_TESTNET = TxCache("Testnet")
 TX_CACHE_BCASH = TxCache("Bcash")
 
-TXHASH_8cc1f4 = bytes.fromhex(
-    "8cc1f4adf7224ce855cf535a5104594a0004cb3b640d6714fdb00b9128832dd5"
+TXHASH_ea19cb = bytes.fromhex(  # FAKE tx
+    "ea19cb1b0d5fef96494b68f98e5615c92a81a2f6f322d81d58b2d5d479027031"
 )
 TXHASH_a5cd2a = bytes.fromhex(
     "a5cd2a706d680587e572df16a8ce5233139a094ebbd148cc66a8004dcc88819c"
 )
-TXHASH_d5f65e = bytes.fromhex(
-    "d5f65ee80147b4bcc70b75e4bbf2d7382021b871bd8867ef8fa525ef50864882"
+TXHASH_895ef0 = bytes.fromhex(  # FAKE tx
+    "895ef02818df40248b65298ed1a1d773de6578a5c70f60d0657ace6f9b1eaf70"
 )
-TXHASH_fa80a9 = bytes.fromhex(
-    "fa80a9949f1094119195064462f54d0e0eabd3139becd4514ae635b8c7fe3a46"
+TXHASH_b0cf22 = bytes.fromhex(  # FAKE tx
+    "b0cf22558c2a44ceac4c4c58a11fdc39524883623b386594ca010f05e5ed5ad1"
 )
-TXHASH_5dfd1b = bytes.fromhex(
-    "5dfd1b037633adc7f84a17b2df31c9994fe50b3ab3e246c44c4ceff3d326f62e"
+TXHASH_3494cc = bytes.fromhex(  # FAKE tx
+    "3494cc2588ccec4ee37360e55af5f00d3fb2b95cb84c1a03b89c89b12c7a305e"
 )
 
 
@@ -51,13 +51,12 @@ TXHASH_5dfd1b = bytes.fromhex(
 # spending from Bitcoin path should fail.
 @pytest.mark.altcoin
 def test_invalid_path_fail(client):
-    # tx: d5f65ee80147b4bcc70b75e4bbf2d7382021b871bd8867ef8fa525ef50864882
-    # input 0: 0.0039 BTC
+    # NOTE: fake input tx
 
     inp1 = messages.TxInputType(
         address_n=parse_path("44h/0h/0h/0/0"),
         amount=390000,
-        prev_hash=TXHASH_d5f65e,
+        prev_hash=TXHASH_895ef0,
         prev_index=0,
     )
 
@@ -81,13 +80,12 @@ def test_invalid_path_fail(client):
 # spending from Bitcoin path should pass with safety checks set to prompt.
 @pytest.mark.altcoin
 def test_invalid_path_prompt(client):
-    # tx: d5f65ee80147b4bcc70b75e4bbf2d7382021b871bd8867ef8fa525ef50864882
-    # input 0: 0.0039 BTC
+    # NOTE: fake input tx
 
     inp1 = messages.TxInputType(
         address_n=parse_path("44h/0h/0h/0/0"),
         amount=390000,
-        prev_hash=TXHASH_d5f65e,
+        prev_hash=TXHASH_895ef0,
         prev_index=0,
     )
 
@@ -111,13 +109,12 @@ def test_invalid_path_prompt(client):
 # spending from Bitcoin path should work.
 @pytest.mark.altcoin
 def test_invalid_path_pass_forkid(client):
-    # tx: 8cc1f4adf7224ce855cf535a5104594a0004cb3b640d6714fdb00b9128832dd5
-    # input 0: 0.0039 BTC
+    # NOTE: fake input tx
 
     inp1 = messages.TxInputType(
         address_n=parse_path("44h/0h/0h/0/0"),
         amount=390000,
-        prev_hash=TXHASH_8cc1f4,
+        prev_hash=TXHASH_ea19cb,
         prev_index=0,
     )
 
@@ -132,6 +129,7 @@ def test_invalid_path_pass_forkid(client):
 
 
 def test_attack_path_segwit(client):
+    # NOTE: fake input tx
     # Scenario: The attacker falsely claims that the transaction uses Testnet paths to
     # avoid the path warning dialog, but in step6_sign_segwit_inputs() uses Bitcoin paths
     # to get a valid signature.
@@ -141,20 +139,20 @@ def test_attack_path_segwit(client):
     )
 
     inp1 = messages.TxInputType(
-        # The actual input that the attcker wants to get signed.
+        # The actual input that the attacker wants to get signed.
         address_n=parse_path("84'/0'/0'/0/0"),
         amount=9426,
-        prev_hash=TXHASH_fa80a9,
+        prev_hash=TXHASH_b0cf22,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDWITNESS,
     )
     inp2 = messages.TxInputType(
-        # The actual input that the attcker wants to get signed.
+        # The actual input that the attacker wants to get signed.
         # We need this one to be from a different account, so that the match checker
         # allows the transaction to pass.
         address_n=parse_path("84'/0'/1'/0/1"),
         amount=7086,
-        prev_hash=TXHASH_5dfd1b,
+        prev_hash=TXHASH_3494cc,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDWITNESS,
     )
@@ -193,15 +191,15 @@ def test_attack_path_segwit(client):
                 messages.ButtonRequest(code=B.SignTx),
                 # Step: verify inputs
                 request_input(0),
-                request_meta(TXHASH_fa80a9),
-                request_input(0, TXHASH_fa80a9),
-                request_output(0, TXHASH_fa80a9),
-                request_output(1, TXHASH_fa80a9),
+                request_meta(TXHASH_b0cf22),
+                request_input(0, TXHASH_b0cf22),
+                request_output(0, TXHASH_b0cf22),
+                request_output(1, TXHASH_b0cf22),
                 request_input(1),
-                request_meta(TXHASH_5dfd1b),
-                request_input(0, TXHASH_5dfd1b),
-                request_output(0, TXHASH_5dfd1b),
-                request_output(1, TXHASH_5dfd1b),
+                request_meta(TXHASH_3494cc),
+                request_input(0, TXHASH_3494cc),
+                request_output(0, TXHASH_3494cc),
+                request_output(1, TXHASH_3494cc),
                 # Step: serialize inputs
                 request_input(0),
                 request_input(1),

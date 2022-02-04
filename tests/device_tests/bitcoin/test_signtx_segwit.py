@@ -34,8 +34,8 @@ TXHASH_20912f = bytes.fromhex(
 TXHASH_338e2d = bytes.fromhex(
     "338e2d02e0eaf8848e38925904e51546cf22e58db5b1860c4a0e72b69c56afe5"
 )
-TXHASH_dee13c = bytes.fromhex(
-    "dee13c469e7ab28108a1ce470d74cb40896d9bb459951bdf590ca6a495293a02"
+TXHASH_c7c56d = bytes.fromhex(  # FAKE tx
+    "c7c56dea0f2df57e73483333a4de841fe40dcf5c2ad682eea7604d2930f6d670"
 )
 TXHASH_e5040e = bytes.fromhex(
     "e5040e1bc1ae7667ffb9e5248e90b2fb93cd9150234151ce90e14ab2f5933bcd"
@@ -144,12 +144,13 @@ def test_send_p2sh_change(client: TrezorClientDebugLink):
 
 
 def test_testnet_segwit_big_amount(client: TrezorClientDebugLink):
+    # NOTE: fake input tx used
     # This test is testing transaction with amount bigger than fits to uint32
 
     inp1 = messages.TxInputType(
         address_n=parse_path("49h/1h/0h/0/0"),
         amount=2 ** 32 + 1,
-        prev_hash=TXHASH_dee13c,
+        prev_hash=TXHASH_c7c56d,
         prev_index=0,
         script_type=messages.InputScriptType.SPENDP2SHWITNESS,
     )
@@ -166,8 +167,8 @@ def test_testnet_segwit_big_amount(client: TrezorClientDebugLink):
                 messages.ButtonRequest(code=B.ConfirmOutput),
                 messages.ButtonRequest(code=B.SignTx),
                 request_input(0),
-                request_meta(TXHASH_dee13c),
-                request_output(0, TXHASH_dee13c),
+                request_meta(TXHASH_c7c56d),
+                request_output(0, TXHASH_c7c56d),
                 request_input(0),
                 request_output(0),
                 request_input(0),
@@ -179,7 +180,7 @@ def test_testnet_segwit_big_amount(client: TrezorClientDebugLink):
         )
     assert (
         serialized_tx.hex()
-        == "01000000000101023a2995a4a60c59df1b9559b49b6d8940cb740d47cea10881b27a9e463ce1de00000000171600140099a7ecbd938ed1839f5f6bf6d50933c6db9d5cffffffff01010000000100000017a914097c569095163e84475d07aa95a1f736df895b7b8702483045022100965aa8897c7cd5f0bff830481ed5259bf662ed0415ab497a6a152a3c335eb0a1022060acbbbada909b6575ac6f19382a6bdf4cab2fa1c5421aa66677806f380ddb870121033add1f0e8e3c3136f7428dd4a4de1057380bd311f5b0856e2269170b4ffa65bf00000000"
+        == "0100000000010170d6f630294d60a7ee82d62a5ccf0de41f84dea4333348737ef52d0fea6dc5c700000000171600140099a7ecbd938ed1839f5f6bf6d50933c6db9d5cffffffff01010000000100000017a914097c569095163e84475d07aa95a1f736df895b7b8702473044022061a5abbf9fd7bb154af0fe8cac7714ee66708f660d4adaa3a8e2b32443c4bc15022022d95a62004621458e6773602a2b185c4965462a8857e3b6a40fa621535d4b950121033add1f0e8e3c3136f7428dd4a4de1057380bd311f5b0856e2269170b4ffa65bf00000000"
     )
 
 
@@ -328,16 +329,15 @@ def test_attack_change_input_address(client: TrezorClientDebugLink):
                 request_input(0, TXHASH_20912f),
                 request_output(0, TXHASH_20912f),
                 request_output(1, TXHASH_20912f),
-                request_input(0),
-                messages.Failure(code=messages.FailureType.ProcessError),
+                messages.Failure(code=messages.FailureType.DataError),
             ]
         )
         with pytest.raises(TrezorFailure) as exc:
             btc.sign_tx(
                 client, "Testnet", [inp1], [out1, out2], prev_txes=TX_API_TESTNET
             )
-        assert exc.value.code == messages.FailureType.ProcessError
-        assert exc.value.message.endswith("Transaction has changed during signing")
+        assert exc.value.code == messages.FailureType.DataError
+        assert exc.value.message.endswith("Input does not match scriptPubKey")
 
 
 def test_attack_mixed_inputs(client: TrezorClientDebugLink):
