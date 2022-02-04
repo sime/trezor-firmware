@@ -1,8 +1,9 @@
-use core::time::Duration;
-
 use heapless::Vec;
 
-use crate::ui::component::{EventCtx, TimerToken};
+use crate::{
+    time::Duration,
+    ui::component::{EventCtx, TimerToken},
+};
 
 /// Contains state commonly used in implementations multi-tap keyboards.
 pub struct MultiTapKeyboard {

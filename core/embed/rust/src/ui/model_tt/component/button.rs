@@ -41,8 +41,8 @@ impl Button {
         self
     }
 
-    pub fn empty(area: Rect, styles: ButtonStyleSheet) -> Self {
-        Self::with_text(area, b"", styles)
+    pub fn empty(area: Rect) -> Self {
+        Self::with_text(area, b"")
     }
 
     pub fn enable_if(&mut self, ctx: &mut EventCtx, enable: bool) {
