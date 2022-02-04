@@ -26,11 +26,8 @@ from ..signtx import request_finished, request_input, request_meta, request_outp
 B = messages.ButtonRequestType
 TX_API = TxCache("Bgold")
 
-TXHASH_25526b = bytes.fromhex(
-    "25526bf06c76ad3082bba930cf627cdd5f1b3cd0b9907dd7ff1a07e14addc985"
-)
-TXHASH_f55c5b = bytes.fromhex(
-    "f55c5bc925eb2a0bf9de0ac142b24bed81ec46dd2151d5f69728070eaea1aded"
+TXHASH_aade05 = bytes.fromhex(
+    "aade0536c655334908e677204742f06092fc9dad30f7b98b0c7a51090e7fa8a9"
 )
 TXHASH_7f1f6b = bytes.fromhex(  # FAKE tx
     "7f1f6bfe8d5a23e038c58bdcf47e6eb3b5ddb93300176b273564951105206b39"
@@ -552,15 +549,15 @@ def test_send_btg_external_presigned(client):
     )
     inp2 = messages.TxInputType(
         # address_n=parse_path("49'/156'/0'/0/0"),
-        # AXibjT5r96ZaVA8Lu4BQZocdTx7p5Ud8ZP
         amount=58456,
-        prev_hash=TXHASH_f55c5b,
+        prev_hash=TXHASH_aade05,
         prev_index=0,
         script_type=messages.InputScriptType.EXTERNAL,
-        script_pubkey=bytes.fromhex("a914aee37ad448e17438cabfee1756f2a08e33ed3ce887"),
-        script_sig=bytes.fromhex("1600147c5edda9b293db2c8894b9d81efd77764910c445"),
-        witness=bytes.fromhex(
-            "024730440220091eece828409b3a9aa92dd2f9b032f9fb3a12b21b323a3fdea3cb18d08249af022065412107afcf76b0d28b90188c802f8f17b41790ed81c868d0ee23f1dd2ec53441210386789a34fe1a49bfc3e174adc6706c6222b0d80de76b884a0e3d32f8e9c4dc3e"
+        script_pubkey=bytes.fromhex(
+            "76a9147c5edda9b293db2c8894b9d81efd77764910c44588ac"
+        ),
+        script_sig=bytes.fromhex(
+            "4830450221008fb6fe8913178f2a3ab6fad1665c99a9ea0b7f5d4c079208dfc0a6d528a6d2f602206b2cd948bc367caec7da7c0806fe640a55fe8005979cadc4d414b1590109226141210386789a34fe1a49bfc3e174adc6706c6222b0d80de76b884a0e3d32f8e9c4dc3e"
         ),
     )
     out1 = messages.TxOutputType(
@@ -577,19 +574,18 @@ def test_send_btg_external_presigned(client):
                 messages.ButtonRequest(code=B.ConfirmOutput),
                 messages.ButtonRequest(code=B.SignTx),
                 request_input(0),
-                request_meta(TXHASH_25526b),
-                request_input(0, TXHASH_25526b),
-                request_output(0, TXHASH_25526b),
-                request_output(1, TXHASH_25526b),
+                request_meta(TXHASH_6f0398),
+                request_input(0, TXHASH_6f0398),
+                request_output(0, TXHASH_6f0398),
+                request_output(1, TXHASH_6f0398),
                 request_input(1),
-                request_meta(TXHASH_f55c5b),
-                request_input(0, TXHASH_f55c5b),
-                request_output(0, TXHASH_f55c5b),
-                request_output(1, TXHASH_f55c5b),
+                request_meta(TXHASH_aade05),
+                request_input(0, TXHASH_aade05),
+                request_output(0, TXHASH_aade05),
+                request_output(1, TXHASH_aade05),
                 request_input(0),
                 request_input(1),
                 request_output(0),
-                request_input(1),
                 request_finished(),
             ]
         )
@@ -599,5 +595,5 @@ def test_send_btg_external_presigned(client):
 
     assert (
         btc_hash(serialized_tx)[::-1].hex()
-        == "95ebe5cdfb8dc3c112eb0107fc3bd7701689ac5ec4a74a3d12e203333d0832d3"
+        == "3265a374759499b2043cf8ce57d11cf7ad35999bc5c470daa45eafef9c2ba2f2"
     )
