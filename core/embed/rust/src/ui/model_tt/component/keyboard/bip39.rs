@@ -16,7 +16,6 @@ use crate::{
 
 pub enum Bip39KeyboardMsg {
     Confirmed,
-    Cancelled,
 }
 
 const KEYS: [&[u8]; 9] = [
@@ -70,6 +69,11 @@ impl Bip39Keyboard {
         })
     }
 
+    fn on_input_change(&mut self, ctx: &mut EventCtx) {
+        self.toggle_key_buttons(ctx);
+        self.toggle_prompt_or_input(ctx);
+    }
+
     /// Either enable or disable the key buttons, depending on the dictionary
     /// completion mask and the pending key.
     fn toggle_key_buttons(&mut self, ctx: &mut EventCtx) {
@@ -110,70 +114,6 @@ impl Bip39Keyboard {
         }
         mask
     }
-
-    /// Key button was clicked. If this button is pending, let's cycle the
-    /// pending character in textbox. If not, let's just append the first
-    /// character.
-    fn on_key_click(&mut self, ctx: &mut EventCtx, clicked_key: usize) {
-        self.input.mutate(ctx, |ctx, input| {
-            let input = input.inner_mut();
-            input
-                .multi_tap
-                .click_key(ctx, clicked_key, KEYS[clicked_key], &mut input.textbox);
-            input.complete_word_from_dictionary();
-        });
-        self.toggle_key_buttons(ctx);
-        self.toggle_prompt_or_input(ctx);
-    }
-
-    /// Backspace button was clicked, let's delete the last character of input
-    /// and clear the pending marker.
-    fn on_backspace_click(&mut self, ctx: &mut EventCtx) {
-        self.input.mutate(ctx, |ctx, input| {
-            let input = input.inner_mut();
-            input.textbox.delete_last(ctx);
-            input.multi_tap.clear_pending_state(ctx);
-        });
-        self.toggle_key_buttons(ctx);
-        self.toggle_prompt_or_input(ctx);
-    }
-
-    /// Input button was clicked.  If the content matches the suggested word,
-    /// let's confirm it, otherwise just auto-complete.
-    fn on_input_click(&mut self, ctx: &mut EventCtx) -> Option<Bip39KeyboardMsg> {
-        let msg = self.input.mutate(ctx, |ctx, input| {
-            let input = input.inner_mut();
-            match input.completed_word {
-                Some(word) if word == input.textbox.content() => {
-                    input.textbox.clear(ctx);
-                    Some(Bip39KeyboardMsg::Confirmed)
-                }
-                Some(word) => {
-                    input.textbox.replace(ctx, word);
-                    None
-                }
-                None => None,
-            }
-        });
-        self.toggle_key_buttons(ctx);
-        self.toggle_prompt_or_input(ctx);
-        msg
-    }
-
-    /// Timeout occurred.  If we can auto-complete current input, let's just
-    /// reset the pending marker.  If not, input is invalid, let's backspace the
-    /// last character.
-    fn on_timeout(&mut self, ctx: &mut EventCtx) {
-        self.input.mutate(ctx, |ctx, input| {
-            let input = input.inner_mut();
-            if input.completed_word.is_none() {
-                input.textbox.delete_last(ctx);
-            }
-            input.multi_tap.clear_pending_state(ctx);
-        });
-        self.toggle_key_buttons(ctx);
-        self.toggle_prompt_or_input(ctx);
-    }
 }
 
 impl Component for Bip39Keyboard {
@@ -181,23 +121,28 @@ impl Component for Bip39Keyboard {
 
     fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
         match self.input.event(ctx, event) {
-            Some(Bip39InputMsg::Button(ButtonMsg::Clicked)) => {
-                if let Some(msg) = self.on_input_click(ctx) {
-                    return Some(msg);
-                }
+            Some(Bip39InputMsg::Confirmed) => {
+                // Confirmed, bubble up.
+                return Some(Bip39KeyboardMsg::Confirmed);
             }
-            Some(Bip39InputMsg::TimedOut) => {
-                self.on_timeout(ctx);
+            Some(_) => {
+                // Either a timeout or a completion.
+                self.on_input_change(ctx);
+                return None;
             }
             _ => {}
         }
         if let Some(ButtonMsg::Clicked) = self.back.event(ctx, event) {
-            self.on_backspace_click(ctx);
+            self.input
+                .mutate(ctx, |ctx, i| i.inner_mut().on_backspace_click(ctx));
+            self.on_input_change(ctx);
             return None;
         }
         for (key, btn) in self.keys.iter_mut().enumerate() {
             if let Some(ButtonMsg::Clicked) = btn.event(ctx, event) {
-                self.on_key_click(ctx, key);
+                self.input
+                    .mutate(ctx, |ctx, i| i.inner_mut().on_key_click(ctx, key));
+                self.on_input_change(ctx);
                 return None;
             }
         }
@@ -215,7 +160,8 @@ impl Component for Bip39Keyboard {
 }
 
 enum Bip39InputMsg {
-    Button(ButtonMsg),
+    Confirmed,
+    Completed,
     TimedOut,
 }
 
@@ -236,8 +182,75 @@ impl Bip39Input {
         }
     }
 
-    fn complete_word_from_dictionary(&mut self) {
+    /// Key button was clicked. If this button is pending, let's cycle the
+    /// pending character in textbox. If not, let's just append the first
+    /// character.
+    fn on_key_click(&mut self, ctx: &mut EventCtx, key: usize) {
+        self.multi_tap
+            .click_key(ctx, key, KEYS[key], &mut self.textbox);
+        self.complete_word_from_dictionary(ctx);
+    }
+
+    /// Backspace button was clicked, let's delete the last character of input
+    /// and clear the pending marker.
+    fn on_backspace_click(&mut self, ctx: &mut EventCtx) {
+        self.multi_tap.clear_pending_state(ctx);
+        self.textbox.delete_last(ctx);
+        self.complete_word_from_dictionary(ctx);
+    }
+
+    /// Input button was clicked.  If the content matches the suggested word,
+    /// let's confirm it, otherwise just auto-complete.
+    fn on_input_click(&mut self, ctx: &mut EventCtx) -> Option<Bip39InputMsg> {
+        match self.completed_word {
+            Some(word) if word == self.textbox.content() => {
+                self.textbox.clear(ctx);
+                Some(Bip39InputMsg::Confirmed)
+            }
+            Some(word) => {
+                self.textbox.replace(ctx, word);
+                Some(Bip39InputMsg::Completed)
+            }
+            None => None,
+        }
+    }
+
+    /// Timeout occurred.  If we can auto-complete current input, let's just
+    /// reset the pending marker.  If not, input is invalid, let's backspace the
+    /// last character.
+    fn on_timeout(&mut self, ctx: &mut EventCtx) -> Option<Bip39InputMsg> {
+        self.multi_tap.clear_pending_state(ctx);
+        if self.completed_word.is_none() {
+            self.textbox.delete_last(ctx);
+            self.complete_word_from_dictionary(ctx);
+        }
+        Some(Bip39InputMsg::TimedOut)
+    }
+
+    fn complete_word_from_dictionary(&mut self, ctx: &mut EventCtx) {
         self.completed_word = bip39::complete_word(self.textbox.content());
+
+        // Change the style of the button depending on the completed word.
+        if let Some(word) = self.completed_word {
+            if self.textbox.content() == word {
+                // Confirm button.
+                self.button.enable(ctx);
+                self.button.set_stylesheet(ctx, theme::button_confirm());
+                self.button
+                    .set_content(ctx, ButtonContent::Icon(theme::ICON_CONFIRM));
+            } else {
+                // Auto-complete button.
+                self.button.enable(ctx);
+                self.button.set_stylesheet(ctx, theme::button_default());
+                self.button
+                    .set_content(ctx, ButtonContent::Icon(theme::ICON_CLICK));
+            }
+        } else {
+            // Disabled button.
+            self.button.disable(ctx);
+            self.button.set_stylesheet(ctx, theme::button_default());
+            self.button.set_content(ctx, ButtonContent::Text(b""));
+        }
     }
 
     fn completion_mask(&self) -> u32 {
@@ -249,9 +262,13 @@ impl Component for Bip39Input {
     type Msg = Bip39InputMsg;
 
     fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
-        match (event, self.multi_tap.pending_timer()) {
-            (Event::Timer(t), Some(pt)) if pt == t => Some(Bip39InputMsg::TimedOut),
-            _ => self.button.event(ctx, event).map(Bip39InputMsg::Button),
+        if matches!((event, self.multi_tap.pending_timer()), (Event::Timer(t), Some(pt)) if pt == t)
+        {
+            self.on_timeout(ctx)
+        } else if let Some(ButtonMsg::Clicked) = self.button.event(ctx, event) {
+            self.on_input_click(ctx)
+        } else {
+            None
         }
     }
 
