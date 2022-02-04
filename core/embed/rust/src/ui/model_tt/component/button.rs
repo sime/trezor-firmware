@@ -44,7 +44,9 @@ impl Button {
     pub fn empty(area: Rect) -> Self {
         Self::with_text(area, b"")
     }
+}
 
+impl Button {
     pub fn enable(&mut self, ctx: &mut EventCtx) {
         self.set(ctx, State::Initial)
     }
@@ -71,9 +73,21 @@ impl Button {
     pub fn is_disabled(&self) -> bool {
         matches!(self.state, State::Disabled)
     }
+}
 
-    pub fn set_stylesheet(&mut self, styles: ButtonStyleSheet) {
-        self.styles = styles;
+impl Button {
+    pub fn set_content(&mut self, ctx: &mut EventCtx, content: ButtonContent) {
+        if self.content != content {
+            self.content = content;
+            ctx.request_paint();
+        }
+    }
+
+    pub fn set_stylesheet(&mut self, ctx: &mut EventCtx, styles: ButtonStyleSheet) {
+        if self.styles != styles {
+            self.styles = styles;
+            ctx.request_paint();
+        }
     }
 
     pub fn content(&self) -> &ButtonContent {
@@ -236,17 +250,20 @@ enum State {
     Disabled,
 }
 
+#[derive(PartialEq, Eq)]
 pub enum ButtonContent {
     Text(&'static [u8]),
     Icon(&'static [u8]),
 }
 
+#[derive(PartialEq, Eq)]
 pub struct ButtonStyleSheet {
     pub normal: &'static ButtonStyle,
     pub active: &'static ButtonStyle,
     pub disabled: &'static ButtonStyle,
 }
 
+#[derive(PartialEq, Eq)]
 pub struct ButtonStyle {
     pub font: Font,
     pub text_color: Color,
