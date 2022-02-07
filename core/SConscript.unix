@@ -663,7 +663,7 @@ def cargo_build():
         features = ["model_tt"]
     if BITCOIN_ONLY == "1":
         features.append("bitcoin_only")
-    if PYOPT == "0":
+    if PYOPT == "0" or not FROZEN:
         features.append("ui")
         features.append("ui_debug")
     elif NEW_UI:
