@@ -53,19 +53,18 @@ mod maybe_trace {
 }
 
 /// Stand-in for the optionally-compiled trait `Trace`.
-/// If UI debugging is enabled, `MaybeTrace` implies `Trace` and is implemented for
-/// everything that implements Trace. If disabled, `MaybeTrace` is implemented for
-/// everything.
+/// If UI debugging is enabled, `MaybeTrace` implies `Trace` and is implemented
+/// for everything that implements Trace. If disabled, `MaybeTrace` is
+/// implemented for everything.
 use maybe_trace::MaybeTrace;
 
-/// In order to store any type of component in a layout, we need to access it
-/// through an object-safe trait. `Component` itself is not object-safe because
-/// of `Component::Msg` associated type. `ObjComponent` is a simple object-safe
-/// wrapping trait that is implemented for all components where `Component::Msg`
-/// can be converted to `Obj` through the `ComponentMsgObj` trait.
-/// 
-/// Object-safe interface between trait `Component` and MicroPython world.
-/// It converts 
+/// Object-safe interface between trait `Component` and MicroPython world. It
+/// converts the result of `Component::event` into `Obj` via the
+/// `ComponentMsgObj` trait, in order to easily return the value to Python. It
+/// also optionally implies `Trace` for UI debugging.
+/// Note: we need to use an object-safe trait in order to store it in a `Gc<dyn
+/// T>` field. `Component` itself is not object-safe because of `Component::Msg`
+/// associated type.
 pub trait ObjComponent: MaybeTrace {
     fn obj_event(&mut self, ctx: &mut EventCtx, event: Event) -> Result<Obj, Error>;
     fn obj_paint(&mut self);
@@ -73,7 +72,7 @@ pub trait ObjComponent: MaybeTrace {
 
 impl<T> ObjComponent for Child<T>
 where
-    T: ComponentMsgObj + MaybeTrace
+    T: ComponentMsgObj + MaybeTrace,
 {
     fn obj_event(&mut self, ctx: &mut EventCtx, event: Event) -> Result<Obj, Error> {
         if let Some(msg) = self.event(ctx, event) {
@@ -105,15 +104,13 @@ struct LayoutObjInner {
 
 impl LayoutObj {
     /// Create a new `LayoutObj`, wrapping a root component.
-    pub fn new(root: impl ComponentMsgObj + MaybeTrace + 'static) -> Result<Gc<Self>, Error>
-    {
+    pub fn new(root: impl ComponentMsgObj + MaybeTrace + 'static) -> Result<Gc<Self>, Error> {
         // Let's wrap the root component into a `Child` to maintain the top-level
         // invalidation logic.
         let wrapped_root = Child::new(root);
         // SAFETY: We are coercing GC-allocated sized ptr into an unsized one.
-        let root = unsafe {
-            Gc::from_raw(Gc::into_raw(Gc::new(wrapped_root)?) as *mut dyn ObjComponent)
-        };
+        let root =
+            unsafe { Gc::from_raw(Gc::into_raw(Gc::new(wrapped_root)?) as *mut dyn ObjComponent) };
 
         Gc::new(Self {
             base: Self::obj_type().as_base(),
