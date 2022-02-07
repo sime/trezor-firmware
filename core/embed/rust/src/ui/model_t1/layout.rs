@@ -122,7 +122,7 @@ mod tests {
 
     #[test]
     fn trace_example_layout() {
-        let layout = Child::new(Dialog::new(
+        let layout = Dialog::new(
             display::screen(),
             |area| {
                 FormattedText::new::<theme::T1DefaultText>(
@@ -134,7 +134,7 @@ mod tests {
             Some(|area, pos| Button::with_text(area, pos, "Left", theme::button_cancel())),
             Some(|area, pos| Button::with_text(area, pos, "Right", theme::button_default())),
             None,
-        ));
+        );
         assert_eq!(
             trace(&layout),
             r#"<Dialog content:<Text content:Testing text layout,
