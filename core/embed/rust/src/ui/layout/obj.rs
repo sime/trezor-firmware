@@ -40,19 +40,40 @@ where
     }
 }
 
+#[cfg(feature = "ui_debug")]
+mod maybe_trace {
+    pub trait MaybeTrace: crate::trace::Trace {}
+    impl<T> MaybeTrace for T where T: crate::trace::Trace {}
+}
+
+#[cfg(not(feature = "ui_debug"))]
+mod maybe_trace {
+    pub trait MaybeTrace {}
+    impl<T> MaybeTrace for T {}
+}
+
+/// Stand-in for the optionally-compiled trait `Trace`.
+/// If UI debugging is enabled, `MaybeTrace` implies `Trace` and is implemented for
+/// everything that implements Trace. If disabled, `MaybeTrace` is implemented for
+/// everything.
+use maybe_trace::MaybeTrace;
+
 /// In order to store any type of component in a layout, we need to access it
 /// through an object-safe trait. `Component` itself is not object-safe because
 /// of `Component::Msg` associated type. `ObjComponent` is a simple object-safe
 /// wrapping trait that is implemented for all components where `Component::Msg`
 /// can be converted to `Obj` through the `ComponentMsgObj` trait.
-pub trait ObjComponent {
+/// 
+/// Object-safe interface between trait `Component` and MicroPython world.
+/// It converts 
+pub trait ObjComponent: MaybeTrace {
     fn obj_event(&mut self, ctx: &mut EventCtx, event: Event) -> Result<Obj, Error>;
     fn obj_paint(&mut self);
 }
 
 impl<T> ObjComponent for Child<T>
 where
-    T: ComponentMsgObj,
+    T: ComponentMsgObj + MaybeTrace
 {
     fn obj_event(&mut self, ctx: &mut EventCtx, event: Event) -> Result<Obj, Error> {
         if let Some(msg) = self.event(ctx, event) {
@@ -67,22 +88,6 @@ where
     }
 }
 
-#[cfg(feature = "ui_debug")]
-mod maybe_trace {
-    pub trait ObjComponentTrace: super::ObjComponent + crate::trace::Trace {}
-    impl<T> ObjComponentTrace for T where T: super::ObjComponent + crate::trace::Trace {}
-}
-
-#[cfg(not(feature = "ui_debug"))]
-mod maybe_trace {
-    pub trait ObjComponentTrace: super::ObjComponent {}
-    impl<T> ObjComponentTrace for T where T: super::ObjComponent {}
-}
-
-/// Trait that combines `ObjComponent` with `Trace` if `ui_debug` is enabled,
-/// and pure `ObjComponent` otherwise.
-use maybe_trace::ObjComponentTrace;
-
 /// `LayoutObj` is a GC-allocated object exported to MicroPython, with type
 /// `LayoutObj::obj_type()`. It wraps a root component through the
 /// `ObjComponent` trait.
@@ -93,23 +98,21 @@ pub struct LayoutObj {
 }
 
 struct LayoutObjInner {
-    root: Gc<dyn ObjComponentTrace>,
+    root: Gc<dyn ObjComponent>,
     event_ctx: EventCtx,
     timer_fn: Obj,
 }
 
 impl LayoutObj {
     /// Create a new `LayoutObj`, wrapping a root component.
-    pub fn new<T>(root: T) -> Result<Gc<Self>, Error>
-    where
-        T: ComponentMsgObj + 'static,
+    pub fn new(root: impl ComponentMsgObj + MaybeTrace + 'static) -> Result<Gc<Self>, Error>
     {
         // Let's wrap the root component into a `Child` to maintain the top-level
         // invalidation logic.
         let wrapped_root = Child::new(root);
         // SAFETY: We are coercing GC-allocated sized ptr into an unsized one.
         let root = unsafe {
-            Gc::from_raw(Gc::into_raw(Gc::new(wrapped_root)?) as *mut dyn ObjComponentTrace)
+            Gc::from_raw(Gc::into_raw(Gc::new(wrapped_root)?) as *mut dyn ObjComponent)
         };
 
         Gc::new(Self {
