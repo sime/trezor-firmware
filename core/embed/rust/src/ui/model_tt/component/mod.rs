@@ -13,6 +13,7 @@ pub use confirm::{HoldToConfirm, HoldToConfirmMsg};
 pub use dialog::{Dialog, DialogLayout, DialogMsg};
 pub use loader::{Loader, LoaderMsg, LoaderStyle, LoaderStyleSheet};
 pub use page::SwipePage;
+pub use pin::{PinDialog, PinDialogMsg};
 pub use swipe::{Swipe, SwipeDirection};
 pub use title::Title;
 
