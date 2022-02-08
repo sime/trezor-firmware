@@ -3,21 +3,16 @@
  }:
 
 let
-  # the last commit from master as of 2021-12-06
+  # the last commit from master as of 2022-02-08
   rustOverlay = import (builtins.fetchTarball {
-    url = "https://github.com/oxalica/rust-overlay/archive/96f1bd1ec11d9c9e8b41c7560df9efae8d091908.tar.gz";
-    sha256 = "07qfya55d3lw4mblm62ykx8h9zg2ms3891ik30qzzpywwacafi8j";
+    url = "https://github.com/oxalica/rust-overlay/archive/2eae19e246433530998cbf239d5505b7b87bc854.tar.gz";
+    sha256 = "0panx24sqcvx52wza02zsxmpkhg6xld7hklrv7dybc59akqm2ira";
   });
-  # the last successful build of nixpkgs-unstable as of 2021-11-18
+  # the last successful build of nixpkgs-unstable as of 2022-02-06
   nixpkgs = import (builtins.fetchTarball {
-    url = "https://github.com/NixOS/nixpkgs/archive/7fad01d9d5a3f82081c00fb57918d64145dc904c.tar.gz";
-    sha256 = "0g0jn8cp1f3zgs7xk2xb2vwa44gb98qlp7k0dvigs0zh163c2kim";
+    url = "https://github.com/NixOS/nixpkgs/archive/942b0817e898262cc6e3f0a5f706ce09d8f749f1.tar.gz";
+    sha256 = "048r0rjwlymixbwqfqygn96jm2czdf7a74qgxl6z2al5h02wd5af";
   }) { overlays = [ rustOverlay ]; };
-  # commit before python36 was removed
-  python36nixpkgs = import (builtins.fetchTarball {
-    url = "https://github.com/NixOS/nixpkgs/archive/b9126f77f553974c90ab65520eff6655415fc5f4.tar.gz";
-    sha256 = "02s3qkb6kz3ndyx7rfndjbvp4vlwiqc42fxypn3g6jnc0v5jyz95";
-  }) { };
   moneroTests = nixpkgs.fetchurl {
     url = "https://github.com/ph4r05/monero/releases/download/v0.17.1.9-tests/trezor_tests";
     sha256 = "410bc4ff2ff1edc65e17f15b549bd1bf8a3776cf67abdea86aed52cf4bce8d9d";
@@ -28,7 +23,7 @@ let
     ${nixpkgs.patchelf}/bin/patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" "$out"
     chmod -w $out
   '';
-  rustStable = nixpkgs.rust-bin.stable."1.57.0".minimal.override {
+  rustStable = nixpkgs.rust-bin.stable."1.58.1".minimal.override {
     targets = [
       "thumbv7em-none-eabihf" # TT
       "thumbv7m-none-eabi"    # T1
@@ -38,7 +33,7 @@ let
     extensions = [ "clippy" ];
   };
   gcc = nixpkgs.gcc11;
-  llvmPackages = nixpkgs.llvmPackages_12;
+  llvmPackages = nixpkgs.llvmPackages_13;
   # see pyright/README.md for update procedure
   pyright = nixpkgs.callPackage ./pyright {};
   # HWI tests need https://github.com/bitcoin/bitcoin/pull/22558
@@ -60,11 +55,11 @@ stdenvNoCC.mkDerivation ({
     bitcoind
     # install other python versions for tox testing
     # NOTE: running e.g. "python3" in the shell runs the first version in the following list,
-    #       and poetry uses the default version (currently 3.8)
-    python38
+    #       and poetry uses the default version (currently 3.9)
     python39
+    python310
+    python38
     python37
-    python36nixpkgs.python36
   ] ++ [
     SDL2
     SDL2_image

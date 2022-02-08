@@ -30,7 +30,6 @@ install_requires = [
     "libusb1>=1.6.4",
     "construct>=2.9",
     "typing_extensions>=3.10",
-    "dataclasses ; python_version<'3.7'",
 ]
 
 extras_require = {
@@ -76,7 +75,7 @@ setup(
     entry_points={"console_scripts": ["trezorctl=trezorlib.cli.trezorctl:cli"]},
     install_requires=install_requires,
     extras_require=extras_require,
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     include_package_data=True,
     zip_safe=False,
     classifiers=[
