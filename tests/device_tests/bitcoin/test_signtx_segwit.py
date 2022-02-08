@@ -328,7 +328,8 @@ def test_attack_change_input_address(client: TrezorClientDebugLink):
                 request_meta(TXHASH_20912f),
                 request_input(0, TXHASH_20912f),
                 request_output(0, TXHASH_20912f),
-                request_output(1, TXHASH_20912f),
+                # only for TT
+                (client.features.model == "T", request_output(1, TXHASH_20912f)),
                 messages.Failure(code=messages.FailureType.DataError),
             ]
         )
