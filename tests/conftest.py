@@ -15,7 +15,7 @@
 # If not, see <https://www.gnu.org/licenses/lgpl-3.0.html>.
 
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Generator
 
 import pytest
 
@@ -62,7 +62,9 @@ def _raw_client(request: pytest.FixtureRequest) -> Client:
 
 
 @pytest.fixture(scope="function")
-def client(request: pytest.FixtureRequest, _raw_client: Client) -> Client:
+def client(
+    request: pytest.FixtureRequest, _raw_client: Client
+) -> Generator[Client, None, None]:
     """Client fixture.
 
     Every test function that requires a client instance will get it from here.
@@ -106,8 +108,8 @@ def client(request: pytest.FixtureRequest, _raw_client: Client) -> Client:
         request.session.shouldstop = "Failed to communicate with Trezor"
         pytest.fail("Failed to communicate with Trezor")
 
-    if run_ui_tests:
-        # we need to reseed before the wipe
+    if run_ui_tests and _raw_client.features.model == "T":
+        # we need to reseed before the wipe for TT
         _raw_client.debug.reseed(0)
 
     if sd_marker:
@@ -154,7 +156,9 @@ def client(request: pytest.FixtureRequest, _raw_client: Client) -> Client:
         _raw_client.clear_session()
 
     if run_ui_tests:
-        with ui_tests.screen_recording(_raw_client, request):
+        # Setting the right model for UI tests - TT or T1
+        model = f"T{_raw_client.features.model}"
+        with ui_tests.screen_recording(_raw_client, request, model):
             yield _raw_client
     else:
         yield _raw_client
