@@ -13,7 +13,6 @@ OBJS += layout.o
 OBJS += memory.o
 OBJS += oled.o
 OBJS += random_delays.o
-OBJS += rng.o
 OBJS += supervise.o
 OBJS += usb21_standard.o
 OBJS += usb_standard.o
