@@ -11,7 +11,7 @@ pub struct Title<T, U> {
     content: Child<T>,
 }
 
-impl<T: Component, U: AsRef<[u8]>> Title<T, U> {
+impl<T: Component, U: AsRef<str>> Title<T, U> {
     pub fn new(area: Rect, title: U, content: impl FnOnce(Rect) -> T) -> Self {
         let (title_area, content_area) = Self::areas(area);
         Self {
@@ -32,7 +32,7 @@ impl<T: Component, U: AsRef<[u8]>> Title<T, U> {
     }
 }
 
-impl<T: Component, U: AsRef<[u8]>> Component for Title<T, U> {
+impl<T: Component, U: AsRef<str>> Component for Title<T, U> {
     type Msg = T::Msg;
 
     fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
@@ -56,7 +56,7 @@ impl<T: Component, U: AsRef<[u8]>> Component for Title<T, U> {
 impl<T, U> crate::trace::Trace for Title<T, U>
 where
     T: crate::trace::Trace,
-    U: crate::trace::Trace + AsRef<[u8]>,
+    U: crate::trace::Trace + AsRef<str>,
 {
     fn trace(&self, t: &mut dyn crate::trace::Tracer) {
         t.open("Title");

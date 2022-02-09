@@ -37,7 +37,7 @@ pub struct Button<T> {
     state: State,
 }
 
-impl<T: AsRef<[u8]>> Button<T> {
+impl<T: AsRef<str>> Button<T> {
     pub fn new(
         area: Rect,
         pos: ButtonPos,
@@ -109,7 +109,7 @@ impl<T: AsRef<[u8]>> Button<T> {
     }
 }
 
-impl<T: AsRef<[u8]>> Component for Button<T> {
+impl<T: AsRef<str>> Component for Button<T> {
     type Msg = ButtonMsg;
 
     fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
@@ -158,7 +158,7 @@ impl<T: AsRef<[u8]>> Component for Button<T> {
 #[cfg(feature = "ui_debug")]
 impl<T> crate::trace::Trace for Button<T>
 where
-    T: AsRef<[u8]> + crate::trace::Trace,
+    T: AsRef<str> + crate::trace::Trace,
 {
     fn trace(&self, t: &mut dyn crate::trace::Tracer) {
         t.open("Button");

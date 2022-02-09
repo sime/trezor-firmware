@@ -29,7 +29,7 @@ pub struct Paragraphs<T> {
 
 impl<T> Paragraphs<T>
 where
-    T: AsRef<[u8]>,
+    T: AsRef<str>,
 {
     pub fn new(area: Rect) -> Self {
         Self {
@@ -111,7 +111,7 @@ where
 
 impl<T> Component for Paragraphs<T>
 where
-    T: AsRef<[u8]>,
+    T: AsRef<str>,
 {
     type Msg = Never;
 
@@ -156,14 +156,14 @@ pub mod trace {
 
     impl<T> crate::trace::Trace for Paragraphs<T>
     where
-        T: AsRef<[u8]>,
+        T: AsRef<str>,
     {
         fn trace(&self, t: &mut dyn crate::trace::Tracer) {
             t.open("Paragraphs");
             let mut char_offset = self.offset.chr;
             for paragraph in self.list.iter().skip(self.offset.par).take(self.visible) {
                 paragraph.layout.layout_text(
-                    &paragraph.content.as_ref()[char_offset..],
+                    paragraph.content[char_offset..],
                     &mut paragraph.layout.initial_cursor(),
                     &mut TraceSink(t),
                 );
@@ -182,7 +182,7 @@ pub struct Paragraph<T> {
 
 impl<T> Paragraph<T>
 where
-    T: AsRef<[u8]>,
+    T: AsRef<str>,
 {
     pub fn new(content: T, layout: TextLayout) -> Self {
         Self { content, layout }
@@ -191,7 +191,7 @@ where
 
 impl<T> Dimensions for Paragraph<T>
 where
-    T: AsRef<[u8]>,
+    T: AsRef<str>,
 {
     fn get_size(&mut self) -> Offset {
         self.layout.bounds.size()
@@ -223,7 +223,7 @@ struct PageBreakIterator<'a, T> {
 /// `PageOffset { 0, 0 }` even if the paragraph vector is empty.
 impl<'a, T> Iterator for PageBreakIterator<'a, T>
 where
-    T: AsRef<[u8]>,
+    T: AsRef<str>,
 {
     /// `PageOffset` denotes the first paragraph that is rendered and a
     /// character offset in that paragraph.
@@ -284,7 +284,7 @@ where
 
 impl<T> Paginate for Paragraphs<T>
 where
-    T: AsRef<[u8]>,
+    T: AsRef<str>,
 {
     fn page_count(&mut self) -> usize {
         // There's always at least one page.

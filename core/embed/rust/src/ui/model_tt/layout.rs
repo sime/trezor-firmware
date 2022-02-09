@@ -2,7 +2,7 @@ use core::convert::{TryFrom, TryInto};
 
 use crate::{
     error::Error,
-    micropython::{buffer::Buffer, map::Map, obj::Obj, qstr::Qstr},
+    micropython::{buffer::StrBuffer, map::Map, obj::Obj, qstr::Qstr},
     ui::{
         component::{
             base::ComponentExt, text::paragraphs::Paragraphs, Child, FormattedText, PageMsg,
@@ -71,7 +71,7 @@ extern "C" fn ui_layout_new_example(_param: Obj) -> Obj {
                 area,
                 "Testing text layout, with some text, and some more text. And {param}",
             )
-            .with(b"param", b"parameters!")
+            .with("param", "parameters!")
         })))?;
         Ok(layout.into())
     };
@@ -85,11 +85,11 @@ extern "C" fn ui_layout_new_confirm_action(
     kwargs: *const Map,
 ) -> Obj {
     let block = move |_args: &[Obj], kwargs: &Map| {
-        let title: Buffer = kwargs.get(Qstr::MP_QSTR_title)?.try_into()?;
-        let action: Option<Buffer> = kwargs.get(Qstr::MP_QSTR_action)?.try_into_option()?;
-        let description: Option<Buffer> =
+        let title: StrBuffer = kwargs.get(Qstr::MP_QSTR_title)?.try_into()?;
+        let action: Option<StrBuffer> = kwargs.get(Qstr::MP_QSTR_action)?.try_into_option()?;
+        let description: Option<StrBuffer> =
             kwargs.get(Qstr::MP_QSTR_description)?.try_into_option()?;
-        let verb: Option<Buffer> = kwargs.get(Qstr::MP_QSTR_verb)?.try_into_option()?;
+        let verb: Option<StrBuffer> = kwargs.get(Qstr::MP_QSTR_verb)?.try_into_option()?;
         let reverse: bool = kwargs.get(Qstr::MP_QSTR_reverse)?.try_into()?;
 
         let obj = LayoutObj::new(

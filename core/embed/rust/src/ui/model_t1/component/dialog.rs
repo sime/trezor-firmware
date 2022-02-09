@@ -19,7 +19,7 @@ pub struct Dialog<T, U> {
     right_btn: Option<Child<Button<U>>>,
 }
 
-impl<T: Component, U: AsRef<[u8]>> Dialog<T, U> {
+impl<T: Component, U: AsRef<str>> Dialog<T, U> {
     pub fn new(
         area: Rect,
         content: impl FnOnce(Rect) -> T,
@@ -44,7 +44,7 @@ impl<T: Component, U: AsRef<[u8]>> Dialog<T, U> {
     }
 }
 
-impl<T: Component, U: AsRef<[u8]>> Component for Dialog<T, U> {
+impl<T: Component, U: AsRef<str>> Component for Dialog<T, U> {
     type Msg = DialogMsg<T::Msg>;
 
     fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
@@ -74,7 +74,7 @@ impl<T: Component, U: AsRef<[u8]>> Component for Dialog<T, U> {
 impl<T, U> crate::trace::Trace for Dialog<T, U>
 where
     T: crate::trace::Trace,
-    U: crate::trace::Trace + AsRef<[u8]>,
+    U: crate::trace::Trace + AsRef<str>,
 {
     fn trace(&self, t: &mut dyn crate::trace::Tracer) {
         t.open("Dialog");

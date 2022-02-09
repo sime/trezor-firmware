@@ -14,7 +14,7 @@ pub struct Title<T, U> {
 impl<T, U> Title<T, U>
 where
     T: Component,
-    U: AsRef<[u8]>,
+    U: AsRef<str>,
 {
     pub fn new(area: Rect, title: U, content: impl FnOnce(Rect) -> T) -> Self {
         let (title_area, content_area) = Self::areas(area);
@@ -40,7 +40,7 @@ where
 impl<T, U> Component for Title<T, U>
 where
     T: Component,
-    U: AsRef<[u8]>,
+    U: AsRef<str>,
 {
     type Msg = T::Msg;
 
@@ -69,7 +69,7 @@ where
 impl<T, U> crate::trace::Trace for Title<T, U>
 where
     T: crate::trace::Trace,
-    U: crate::trace::Trace + AsRef<[u8]>,
+    U: crate::trace::Trace + AsRef<str>,
 {
     fn trace(&self, t: &mut dyn crate::trace::Tracer) {
         t.open("Title");

@@ -28,8 +28,8 @@ const DIGIT_COUNT: usize = 10; // 0..10
 
 pub struct PinDialog {
     digits: Vec<u8, MAX_LENGTH>,
-    major_prompt: Label<&'static [u8]>,
-    minor_prompt: Label<&'static [u8]>,
+    major_prompt: Label<&'static str>,
+    minor_prompt: Label<&'static str>,
     dots: Child<PinDots>,
     reset_btn: Child<Button<&'static str>>,
     cancel_btn: Child<Button<&'static str>>,
@@ -38,7 +38,7 @@ pub struct PinDialog {
 }
 
 impl PinDialog {
-    pub fn new(area: Rect, major_prompt: &'static [u8], minor_prompt: &'static [u8]) -> Self {
+    pub fn new(area: Rect, major_prompt: &'static str, minor_prompt: &'static str) -> Self {
         let digits = Vec::new();
 
         // Prompts and PIN dots display.

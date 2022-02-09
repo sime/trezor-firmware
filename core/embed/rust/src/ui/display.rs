@@ -167,7 +167,7 @@ pub fn loader_indeterminate(
     );
 }
 
-pub fn text(baseline: Point, text: &[u8], font: Font, fg_color: Color, bg_color: Color) {
+pub fn text(baseline: Point, text: &str, font: Font, fg_color: Color, bg_color: Color) {
     display::text(
         baseline.x,
         baseline.y,
@@ -178,7 +178,7 @@ pub fn text(baseline: Point, text: &[u8], font: Font, fg_color: Color, bg_color:
     );
 }
 
-pub fn text_center(baseline: Point, text: &[u8], font: Font, fg_color: Color, bg_color: Color) {
+pub fn text_center(baseline: Point, text: &str, font: Font, fg_color: Color, bg_color: Color) {
     let w = font.text_width(text);
     display::text(
         baseline.x - w / 2,
@@ -198,7 +198,7 @@ impl Font {
         Self(id)
     }
 
-    pub fn text_width(self, text: &[u8]) -> i32 {
+    pub fn text_width(self, text: &str) -> i32 {
         display::text_width(text, self.0)
     }
 

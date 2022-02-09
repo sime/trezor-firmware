@@ -80,7 +80,7 @@ pub fn backlight(val: i32) -> i32 {
     unsafe { display_backlight(val) }
 }
 
-pub fn text(baseline_x: i32, baseline_y: i32, text: &[u8], font: i32, fgcolor: u16, bgcolor: u16) {
+pub fn text(baseline_x: i32, baseline_y: i32, text: &str, font: i32, fgcolor: u16, bgcolor: u16) {
     unsafe {
         display_text(
             baseline_x,
@@ -94,7 +94,7 @@ pub fn text(baseline_x: i32, baseline_y: i32, text: &[u8], font: i32, fgcolor: u
     }
 }
 
-pub fn text_width(text: &[u8], font: i32) -> i32 {
+pub fn text_width(text: &str, font: i32) -> i32 {
     unsafe { display_text_width(text.as_ptr() as _, text.len() as _, font) }
 }
 

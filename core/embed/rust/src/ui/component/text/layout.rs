@@ -152,7 +152,7 @@ impl TextLayout {
 
     pub fn layout_text(
         &self,
-        text: &[u8],
+        text: &str,
         cursor: &mut Point,
         sink: &mut dyn LayoutSink,
     ) -> LayoutFit {
@@ -240,7 +240,7 @@ impl TextLayout {
             .height()
     }
 
-    pub fn measure_text_height(self, text: &[u8]) -> i32 {
+    pub fn measure_text_height(self, text: &str) -> i32 {
         self.layout_text(text, &mut self.initial_cursor(), &mut TextNoOp)
             .height()
     }
@@ -271,7 +271,7 @@ impl LayoutFit {
 
 /// Visitor for text segment operations.
 pub trait LayoutSink {
-    fn text(&mut self, _cursor: Point, _layout: &TextLayout, _text: &[u8]) {}
+    fn text(&mut self, _cursor: Point, _layout: &TextLayout, _text: &str) {}
     fn hyphen(&mut self, _cursor: Point, _layout: &TextLayout) {}
     fn ellipsis(&mut self, _cursor: Point, _layout: &TextLayout) {}
     fn line_break(&mut self, _cursor: Point) {}
@@ -285,7 +285,7 @@ impl LayoutSink for TextNoOp {}
 pub struct TextRenderer;
 
 impl LayoutSink for TextRenderer {
-    fn text(&mut self, cursor: Point, layout: &TextLayout, text: &[u8]) {
+    fn text(&mut self, cursor: Point, layout: &TextLayout, text: &str) {
         display::text(
             cursor,
             text,
@@ -346,7 +346,7 @@ pub mod trace {
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum Op<'a> {
     /// Render text with current color and font.
-    Text(&'a [u8]),
+    Text(&'a str),
     /// Set current text color.
     Color(Color),
     /// Set currently used font.
@@ -391,7 +391,7 @@ struct Span {
 
 impl Span {
     fn fit_horizontally(
-        text: &[u8],
+        text: &str,
         max_width: i32,
         text_font: Font,
         hyphen_font: Font,

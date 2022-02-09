@@ -1,3 +1,5 @@
+use core::str::Chars;
+use core::iter::Cycle;
 use heapless::Vec;
 
 use crate::{
@@ -20,19 +22,19 @@ pub enum PassphraseKeyboardMsg {
     Cancelled,
 }
 
-pub struct PassphraseKeyboard {
+pub struct PassphraseKeyboard<'a> {
     page_swipe: Swipe,
     textbox: Child<TextBox>,
     back_btn: Child<Button<&'static str>>,
     confirm_btn: Child<Button<&'static str>>,
-    key_btns: [[Child<Button<&'static [u8]>>; KEYS]; PAGES],
+    key_btns: [[Child<Button<&'static str>>; KEYS]; PAGES],
     key_page: usize,
-    pending: Option<Pending>,
+    pending: Option<Pending<'a>>,
 }
 
-struct Pending {
+struct Pending<'a> {
     key: usize,
-    char: usize,
+    chars: Cycle<Chars<'a>>,
     timer: TimerToken,
 }
 
@@ -50,16 +52,15 @@ const KEYBOARD: [[&str; KEYS]; PAGES] = [
 const MAX_LENGTH: usize = 50;
 const PENDING_DEADLINE: Duration = Duration::from_secs(1);
 
-impl PassphraseKeyboard {
+impl PassphraseKeyboard<'_> {
     pub fn new(area: Rect) -> Self {
         let textbox_area = Grid::new(area, 5, 1).row_col(0, 0);
         let confirm_btn_area = Grid::new(area, 5, 3).cell(14);
         let back_btn_area = Grid::new(area, 5, 3).cell(12);
         let key_grid = Grid::new(area, 5, 3);
 
-        let text = Vec::new();
         let page_swipe = Swipe::horizontal(area);
-        let textbox = TextBox::new(textbox_area, text).into_child();
+        let textbox = TextBox::new(textbox_area).into_child();
         let confirm_btn = Button::with_text(confirm_btn_area, "Confirm")
             .styled(theme::button_confirm())
             .into_child();
@@ -79,17 +80,17 @@ impl PassphraseKeyboard {
         }
     }
 
-    fn generate_keyboard(grid: &Grid) -> [[Child<Button<&'static [u8]>>; KEYS]; PAGES] {
+    fn generate_keyboard(grid: &Grid) -> [[Child<Button<&'static str>>; KEYS]; PAGES] {
         // can't use a range because the result is a fixed-size array
         [0, 1, 2, 3].map(|i| Self::generate_key_page(grid, i))
     }
 
-    fn generate_key_page(grid: &Grid, page: usize) -> [Child<Button<&'static [u8]>>; KEYS] {
+    fn generate_key_page(grid: &Grid, page: usize) -> [Child<Button<&'static str>>; KEYS] {
         // can't use a range because the result is a fixed-size array
         [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(|i| Self::generate_key(grid, page, i))
     }
 
-    fn generate_key(grid: &Grid, page: usize, key: usize) -> Child<Button<&'static [u8]>> {
+    fn generate_key(grid: &Grid, page: usize, key: usize) -> Child<Button<&'static str>> {
         // Assign the keys in each page to buttons on a 5x3 grid, starting from the
         // second row.
         let area = grid.cell(if key < 9 {
@@ -99,8 +100,8 @@ impl PassphraseKeyboard {
             // For the last key (the "0" position) we skip one cell.
             key + 1 + 3
         });
-        let text = KEYBOARD[page][key].as_bytes();
-        if text == b" " {
+        let text = KEYBOARD[page][key];
+        if text == " " {
             let icon = theme::ICON_SPACE;
             Child::new(Button::with_icon(area, icon))
         } else {
@@ -126,21 +127,17 @@ impl PassphraseKeyboard {
     fn on_key_click(&mut self, ctx: &mut EventCtx, key: usize) {
         let content = self.key_content(self.key_page, key);
 
-        let char = match &self.pending {
+        let (char, iter) = match self.pending.take() {
             Some(pending) if pending.key == key => {
-                // This key is pending. Cycle the last inserted character through the
-                // key content.
-                let char = (pending.char + 1) % content.len();
-                self.textbox
-                    .mutate(ctx, |ctx, t| t.replace_last(ctx, content[char]));
-                char
+                let char = pending.chars.next().unwrap(); // TODO unchecked_unwrap ?
+                self.textbox.mutate(ctx, |ctx, t| t.replace_last(ctx, char));
+                (char, pending.chars)
             }
             _ => {
-                // This key is not pending. Append the first character in the key.
-                let char = 0;
-                self.textbox
-                    .mutate(ctx, |ctx, t| t.append(ctx, content[char]));
-                char
+                let iter = content.chars().cycle();
+                let char = iter.next().unwrap(); // TODO unchecked_unwrap ?
+                self.textbox.mutate(ctx, |ctx, t| t.append(ctx, char));
+                (char, iter)
             }
         };
 
@@ -150,7 +147,7 @@ impl PassphraseKeyboard {
         self.pending = if content.len() > 1 {
             Some(Pending {
                 key,
-                char,
+                chars: iter,
                 timer: ctx.request_timer(PENDING_DEADLINE),
             })
         } else {
@@ -167,10 +164,10 @@ impl PassphraseKeyboard {
         self.pending.take();
     }
 
-    fn key_content(&self, page: usize, key: usize) -> &'static [u8] {
+    fn key_content(&self, page: usize, key: usize) -> &'static str {
         match self.key_btns[page][key].inner().content() {
             ButtonContent::Text(text) => text,
-            ButtonContent::Icon(_) => b" ",
+            ButtonContent::Icon(_) => " ",
         }
     }
 
@@ -183,7 +180,7 @@ impl PassphraseKeyboard {
     }
 }
 
-impl Component for PassphraseKeyboard {
+impl Component for PassphraseKeyboard<'_> {
     type Msg = PassphraseKeyboardMsg;
 
     fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
@@ -239,10 +236,11 @@ struct TextBox {
 }
 
 impl TextBox {
-    fn new(area: Rect, text: Vec<u8, MAX_LENGTH>) -> Self {
+    fn new(area: Rect) -> Self {
+        // TODO: support setting text content from outside
         Self {
             area,
-            text,
+            text: Vec::new(),
             pending: false,
         }
     }
@@ -261,17 +259,19 @@ impl TextBox {
         ctx.request_paint();
     }
 
-    fn replace_last(&mut self, ctx: &mut EventCtx, char: u8) {
+    fn replace_last(&mut self, ctx: &mut EventCtx, char: char) {
+        assert!(char <= u8::MAX as char);
         self.text.pop();
-        if self.text.push(char).is_err() {
+        if self.text.push(char as u8).is_err() {
             #[cfg(feature = "ui_debug")]
             panic!("textbox has zero capacity");
         }
         ctx.request_paint();
     }
 
-    fn append(&mut self, ctx: &mut EventCtx, char: u8) {
-        if self.text.push(char).is_err() {
+    fn append(&mut self, ctx: &mut EventCtx, char: char) {
+        assert!(char <= u8::MAX as char);
+        if self.text.push(char as u8).is_err() {
             #[cfg(feature = "ui_debug")]
             panic!("textbox is full");
         }
@@ -291,7 +291,10 @@ impl Component for TextBox {
 
         display::text(
             self.area.bottom_left(),
-            &self.text,
+            // SAFETY:
+            // Only ASCII characters can be added to the textbox (checked in
+            // `TextBox::append` and `TextBox::replace_last`).
+            unsafe { core::str::from_utf8_unchecked(&self.text) },
             style.font,
             style.text_color,
             style.background_color,

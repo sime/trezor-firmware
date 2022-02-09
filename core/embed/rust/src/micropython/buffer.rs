@@ -1,7 +1,7 @@
 use core::{
     convert::TryFrom,
     ops::{Deref, DerefMut},
-    ptr, slice,
+    ptr, slice, str,
 };
 
 use crate::{error::Error, micropython::obj::Obj};
@@ -117,6 +117,55 @@ impl AsRef<[u8]> for BufferMut {
 impl AsMut<[u8]> for BufferMut {
     fn as_mut(&mut self) -> &mut [u8] {
         buffer_as_mut(self.ptr, self.len)
+    }
+}
+
+/// Represents an immutable UTF-8 string stored on the MicroPython heap and
+/// owned by a `str` object.
+///
+/// # Safety
+///
+/// In most cases, it is unsound to store `StrBuffer` values in a GC-unreachable
+/// location, such as static data. It is also unsound to let the contents be
+/// modified while a reference to them is being held.
+pub struct StrBuffer {
+    buffer: Buffer
+}
+
+impl TryFrom<Obj> for StrBuffer {
+    type Error = Error;
+
+    fn try_from(obj: Obj) -> Result<Self, Self::Error> {
+        if unsafe { ffi::mp_type_str.is_type_of(obj) } {
+            Ok(Self {
+                buffer: Buffer::try_from(obj)?,
+            })
+        } else {
+            Err(Error::TypeError)
+        }
+    }
+}
+
+impl Deref for StrBuffer {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        self.as_ref()
+    }
+}
+
+impl AsRef<str> for StrBuffer {
+    fn as_ref(&self) -> &str {
+        // SAFETY: MicroPython ensures that values of type `str` are UTF-8
+        unsafe { str::from_utf8_unchecked(self.buffer.as_ref()) }
+    }
+}
+
+impl From<&'static str> for StrBuffer {
+    fn from(val: &'static str) -> Self {
+        Self {
+            buffer: Buffer::from(val),
+        }
     }
 }
 
