@@ -14,7 +14,7 @@ use crate::{
     },
     time::Duration,
     ui::{
-        component::{Child, Component, Event, EventCtx, Never, TimerToken},
+        component::{Child, Component, Event, EventCtx, Never, PageMsg, TimerToken},
         geometry::Rect,
     },
     util,
@@ -299,6 +299,17 @@ impl TryFrom<Duration> for Obj {
     fn try_from(value: Duration) -> Result<Self, Self::Error> {
         let millis: usize = value.to_millis().try_into()?;
         millis.try_into()
+    }
+}
+
+impl<T> TryFrom<PageMsg<T, bool>> for Obj {
+    type Error = Error;
+
+    fn try_from(val: PageMsg<T, bool>) -> Result<Self, Self::Error> {
+        match val {
+            PageMsg::Content(_) => Err(Error::TypeError),
+            PageMsg::Controls(c) => Ok(c.into()),
+        }
     }
 }
 

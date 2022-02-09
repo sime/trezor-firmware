@@ -4,9 +4,7 @@ use crate::{
     error::Error,
     micropython::{buffer::Buffer, map::Map, obj::Obj, qstr::Qstr},
     ui::{
-        component::{
-            base::ComponentExt, text::paragraphs::Paragraphs, Child, FormattedText, PageMsg,
-        },
+        component::{base::ComponentExt, text::paragraphs::Paragraphs, Child, FormattedText},
         display,
         layout::obj::LayoutObj,
     },
@@ -14,21 +12,9 @@ use crate::{
 };
 
 use super::{
-    component::{Button, ButtonMsg, DialogMsg, HoldToConfirm, HoldToConfirmMsg, SwipePage, Title},
+    component::{Button, ButtonMsg, DialogMsg, Frame, HoldToConfirm, HoldToConfirmMsg, SwipePage},
     theme,
 };
-
-impl<T> TryFrom<PageMsg<T, bool>> for Obj {
-    type Error = Error;
-
-    fn try_from(val: PageMsg<T, bool>) -> Result<Self, Self::Error> {
-        match val {
-            PageMsg::Content(_) => Ok(Obj::const_none()),
-            PageMsg::Controls(c) if c => Ok(Obj::const_true()),
-            PageMsg::Controls(_) => Ok(Obj::const_false()),
-        }
-    }
-}
 
 impl<T> TryFrom<DialogMsg<T, ButtonMsg, ButtonMsg>> for Obj
 where
@@ -93,7 +79,7 @@ extern "C" fn ui_layout_new_confirm_action(
         let reverse: bool = kwargs.get(Qstr::MP_QSTR_reverse)?.try_into()?;
 
         let obj = LayoutObj::new(
-            Title::new(theme::borders(), title, |area| {
+            Frame::new(theme::borders(), title, |area| {
                 SwipePage::new(
                     area,
                     theme::BG,

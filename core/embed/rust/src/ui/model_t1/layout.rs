@@ -1,10 +1,9 @@
-use core::convert::{TryFrom, TryInto};
+use core::convert::TryInto;
 
 use crate::{
-    error::Error,
     micropython::{buffer::Buffer, map::Map, obj::Obj, qstr::Qstr},
     ui::{
-        component::{text::paragraphs::Paragraphs, Child, FormattedText, PageMsg},
+        component::{text::paragraphs::Paragraphs, Child, FormattedText},
         display,
         layout::obj::LayoutObj,
     },
@@ -15,17 +14,6 @@ use super::{
     component::{Button, ButtonPage, Title},
     theme,
 };
-
-impl<T> TryFrom<PageMsg<T, bool>> for Obj {
-    type Error = Error;
-
-    fn try_from(val: PageMsg<T, bool>) -> Result<Self, Self::Error> {
-        match val {
-            PageMsg::Content(_) => 2.try_into(),
-            PageMsg::Controls(c) => Ok(c.into()),
-        }
-    }
-}
 
 #[no_mangle]
 extern "C" fn ui_layout_new_confirm_action(
