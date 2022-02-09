@@ -1,4 +1,4 @@
-use heapless::Vec;
+use heapless::String;
 
 use crate::{
     time::Duration,
@@ -16,8 +16,9 @@ pub struct MultiTapKeyboard {
 struct Pending {
     /// Index of the pending key.
     key: usize,
-    /// Index of character inside the pending key.
-    char: usize,
+    /// Index of the key press (how many times the `key` was pressed, minus
+    /// one).
+    press: usize,
     /// Timer for clearing the pending state.
     timer: TimerToken,
 }
@@ -34,6 +35,11 @@ impl MultiTapKeyboard {
     /// Return the index of the currently pending key, if any.
     pub fn pending_key(&self) -> Option<usize> {
         self.pending.as_ref().map(|p| p.key)
+    }
+
+    /// Return the index of the pending key press.
+    pub fn pending_press(&self) -> Option<usize> {
+        self.pending.as_ref().map(|p| p.press)
     }
 
     /// Return the token for the currently pending timer.
@@ -53,37 +59,25 @@ impl MultiTapKeyboard {
 
     /// Register a click to a key. `MultiTapKeyboard` itself does not have any
     /// concept of the key set, so both the key index and the key content is
-    /// taken here. Takes `TextBox` as the output buffer, and `EventCtx` to
-    /// request paint passes in case of any output modifications, and to request
-    /// a timeout for cancelling the pending state. Caller is required to handle
-    /// the timer event and call `Self::clear_pending_state` when the timer
-    /// hits.
-    pub fn click_key<const L: usize>(
-        &mut self,
-        ctx: &mut EventCtx,
-        key: usize,
-        key_text: &[u8],
-        textbox: &mut TextBox<L>,
-    ) {
-        enum Op {
-            Replace,
-            Append,
-        }
-        let (op, char) = match &self.pending {
+    /// taken here. Returns a text editing operation the caller should apply on
+    /// the output buffer. Takes `EventCtx` to request a timeout for cancelling
+    /// the pending state. Caller is required to handle the timer event and
+    /// call `Self::clear_pending_state` when the timer hits.
+    pub fn click_key(&mut self, ctx: &mut EventCtx, key: usize, key_text: &str) -> TextEdit {
+        // To simplify things, we assume the key text is ASCII-only.
+        let ascii_text = key_text.as_bytes();
+
+        let (is_pending, press) = match &self.pending {
             Some(pending) if pending.key == key => {
                 // This key is pending. Cycle the last inserted character through the
                 // key content.
-                (Op::Replace, (pending.char + 1) % key_text.len())
+                (true, pending.press + 1)
             }
             _ => {
                 // This key is not pending. Append the first character in the key.
-                (Op::Append, 0)
+                (false, 0)
             }
         };
-        match op {
-            Op::Replace => textbox.replace_last(ctx, key_text[char]),
-            Op::Append => textbox.append(ctx, key_text[char]),
-        }
 
         // If the key has more then one character, we need to set it as pending, so we
         // can cycle through on the repeated clicks. We also request a timer so we can
@@ -91,39 +85,55 @@ impl MultiTapKeyboard {
         //
         // Note: It might seem that we should make sure to `request_paint` in case we
         // progress into a pending state (to display the pending marker), but such
-        // transition only happens as a result of an append op, so the `TextBox` should
-        // have already requested painting.
-        self.pending = if key_text.len() > 1 {
+        // transition only happens as a result of an append op, so the painting should
+        // be requested by handling the `TextEdit`.
+        self.pending = if ascii_text.len() > 1 {
             Some(Pending {
                 key,
-                char,
+                press,
                 timer: ctx.request_timer(self.timeout),
             })
         } else {
             None
         };
+
+        let ch = ascii_text[press % ascii_text.len()] as char;
+        if is_pending {
+            TextEdit::ReplaceLast(ch)
+        } else {
+            TextEdit::Append(ch)
+        }
     }
+}
+
+/// Reified editing operations of `TextBox`.
+///
+/// Note: This does not contain all supported editing operations, only the ones
+/// we currently use.
+pub enum TextEdit {
+    ReplaceLast(char),
+    Append(char),
 }
 
 /// Wraps a character buffer of maximum length `L` and provides text editing
 /// operations over it. Text ops usually take a `EventCtx` to request a paint
 /// pass in case of any state modification.
 pub struct TextBox<const L: usize> {
-    text: Vec<u8, L>,
+    text: String<L>,
 }
 
 impl<const L: usize> TextBox<L> {
     /// Create a new `TextBox` with content `text`.
-    pub fn new(text: Vec<u8, L>) -> Self {
+    pub fn new(text: String<L>) -> Self {
         Self { text }
     }
 
     /// Create an empty `TextBox`.
     pub fn empty() -> Self {
-        Self::new(Vec::new())
+        Self::new(String::new())
     }
 
-    pub fn content(&self) -> &[u8] {
+    pub fn content(&self) -> &str {
         &self.text
     }
 
@@ -139,23 +149,23 @@ impl<const L: usize> TextBox<L> {
         }
     }
 
-    /// Replaces the last character of the content with `char`. If the content
-    /// is empty, `char` is appended.
-    pub fn replace_last(&mut self, ctx: &mut EventCtx, char: u8) {
+    /// Replaces the last character of the content with `ch`. If the content is
+    /// empty, `ch` is appended.
+    pub fn replace_last(&mut self, ctx: &mut EventCtx, ch: char) {
         let previous = self.text.pop();
-        if self.text.push(char).is_err() {
+        if self.text.push(ch).is_err() {
             #[cfg(feature = "ui_debug")]
             panic!("TextContent has zero capacity");
         }
-        let changed = previous != Some(char);
+        let changed = previous != Some(ch);
         if changed {
             ctx.request_paint();
         }
     }
 
-    /// Append `char` at the end of the content.
-    pub fn append(&mut self, ctx: &mut EventCtx, char: u8) {
-        if self.text.push(char).is_err() {
+    /// Append `ch` at the end of the content.
+    pub fn append(&mut self, ctx: &mut EventCtx, ch: char) {
+        if self.text.push(ch).is_err() {
             #[cfg(feature = "ui_debug")]
             panic!("TextContent is full");
         }
@@ -163,10 +173,10 @@ impl<const L: usize> TextBox<L> {
     }
 
     /// Replace the textbox content with `text`.
-    pub fn replace(&mut self, ctx: &mut EventCtx, text: &[u8]) {
+    pub fn replace(&mut self, ctx: &mut EventCtx, text: &str) {
         if self.text != text {
             self.text.clear();
-            if self.text.extend_from_slice(text).is_err() {
+            if self.text.push_str(text).is_err() {
                 #[cfg(feature = "ui_debug")]
                 panic!("TextContent is full");
             }
@@ -176,7 +186,15 @@ impl<const L: usize> TextBox<L> {
 
     /// Clear the textbox content.
     pub fn clear(&mut self, ctx: &mut EventCtx) {
-        self.replace(ctx, b"");
+        self.replace(ctx, "");
+    }
+
+    /// Apply a editing operation to the text buffer.
+    pub fn apply(&mut self, ctx: &mut EventCtx, edit: TextEdit) {
+        match edit {
+            TextEdit::ReplaceLast(char) => self.replace_last(ctx, char),
+            TextEdit::Append(char) => self.append(ctx, char),
+        }
     }
 }
 

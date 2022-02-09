@@ -6,7 +6,7 @@ extern "C" {
     fn mnemonic_word_completion_mask(prefix: *const cty::c_char, len: cty::c_int) -> u32;
 }
 
-pub fn complete_word(prefix: &[u8]) -> Option<&'static [u8]> {
+pub fn complete_word(prefix: &str) -> Option<&'static str> {
     if prefix.is_empty() {
         None
     } else {
@@ -17,13 +17,13 @@ pub fn complete_word(prefix: &[u8]) -> Option<&'static [u8]> {
             None
         } else {
             // SAFETY: On success, `mnemonic_complete_word` should return a 0-terminated
-            // string with static lifetime.
-            Some(unsafe { CStr::from_ptr(word).to_bytes() })
+            // UTF-8 string with static lifetime.
+            Some(unsafe { CStr::from_ptr(word).to_str().unwrap_unchecked() })
         }
     }
 }
 
-pub fn word_completion_mask(prefix: &[u8]) -> u32 {
+pub fn word_completion_mask(prefix: &str) -> u32 {
     // SAFETY: `mnemonic_word_completion_mask` shouldn't retain nor modify the
     // passed byte string, making the call safe.
     unsafe { mnemonic_word_completion_mask(prefix.as_ptr() as _, prefix.len() as _) }

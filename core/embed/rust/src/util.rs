@@ -81,3 +81,16 @@ pub unsafe fn try_with_args_and_kwargs_inline(
     };
     unsafe { try_or_raise(block) }
 }
+
+pub trait ResultExt {
+    fn panic_on_err_if_debugging(self, message: &str);
+}
+
+impl<T, E> ResultExt for Result<T, E> {
+    fn panic_on_err_if_debugging(self, #[allow(unused)] message: &str) {
+        #[cfg(feature = "ui_debug")]
+        if self.is_err() {
+            panic!("{}", message);
+        }
+    }
+}
