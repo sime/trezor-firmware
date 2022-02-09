@@ -61,6 +61,7 @@ pub fn rect_stroke(r: Rect, fg_color: Color) {
 }
 
 pub fn rect_fill_rounded(r: Rect, fg_color: Color, bg_color: Color, radius: u8) {
+    assert!([2, 4, 8, 16].iter().any(|allowed| radius == *allowed));
     display::bar_radius(
         r.x0,
         r.y0,
