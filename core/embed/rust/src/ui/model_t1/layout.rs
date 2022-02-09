@@ -11,7 +11,7 @@ use crate::{
 };
 
 use super::{
-    component::{Button, ButtonPage, Title},
+    component::{Button, ButtonPage, Frame},
     theme,
 };
 
@@ -44,7 +44,7 @@ extern "C" fn ui_layout_new_confirm_action(
         let right = verb
             .map(|label| |area, pos| Button::with_text(area, pos, label, theme::button_default()));
 
-        let obj = LayoutObj::new(Child::new(Title::new(display::screen(), title, |area| {
+        let obj = LayoutObj::new(Child::new(Frame::new(display::screen(), title, |area| {
             ButtonPage::new(
                 area,
                 |area| {
@@ -72,7 +72,7 @@ extern "C" fn ui_layout_new_confirm_text(
         let description: Option<Buffer> =
             kwargs.get(Qstr::MP_QSTR_description)?.try_into_option()?;
 
-        let obj = LayoutObj::new(Child::new(Title::new(display::screen(), title, |area| {
+        let obj = LayoutObj::new(Child::new(Frame::new(display::screen(), title, |area| {
             ButtonPage::new(
                 area,
                 |area| {
@@ -147,7 +147,7 @@ arameters! > left:<Button text:Left > right:<Button text:Right > >"#
 
     #[test]
     fn trace_layout_title() {
-        let layout = Child::new(Title::new(display::screen(), "Please confirm", |area| {
+        let layout = Child::new(Frame::new(display::screen(), "Please confirm", |area| {
             Dialog::new(
                 area,
                 |area| {
@@ -163,7 +163,7 @@ arameters! > left:<Button text:Left > right:<Button text:Right > >"#
         }));
         assert_eq!(
             trace(&layout),
-            r#"<Title title:Please confirm content:<Dialog content:<Text content:Testing text layout,
+            r#"<Frame title:Please confirm content:<Dialog content:<Text content:Testing text layout,
 with some text, and
 some more text. And p-
 arameters! > left:<Button text:Left > right:<Button text:Right > > >"#

@@ -5,13 +5,13 @@ use crate::ui::{
     geometry::{Insets, Rect},
 };
 
-pub struct Title<T, U> {
+pub struct Frame<T, U> {
     area: Rect,
     title: U,
     content: Child<T>,
 }
 
-impl<T, U> Title<T, U>
+impl<T, U> Frame<T, U>
 where
     T: Component,
     U: AsRef<[u8]>,
@@ -37,7 +37,7 @@ where
     }
 }
 
-impl<T, U> Component for Title<T, U>
+impl<T, U> Component for Frame<T, U>
 where
     T: Component,
     U: AsRef<[u8]>,
@@ -66,13 +66,13 @@ where
 }
 
 #[cfg(feature = "ui_debug")]
-impl<T, U> crate::trace::Trace for Title<T, U>
+impl<T, U> crate::trace::Trace for Frame<T, U>
 where
     T: crate::trace::Trace,
     U: crate::trace::Trace + AsRef<[u8]>,
 {
     fn trace(&self, t: &mut dyn crate::trace::Tracer) {
-        t.open("Title");
+        t.open("Frame");
         t.field("title", &self.title);
         t.field("content", &self.content);
         t.close();
