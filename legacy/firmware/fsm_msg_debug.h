@@ -100,4 +100,19 @@ void fsm_msgDebugLinkFlashErase(const DebugLinkFlashErase *msg) {
   uint32_t dummy = svc_flash_lock();
   (void)dummy;
 }
+
+void fsm_msgDebugLinkReseedRandom(const DebugLinkReseedRandom *msg) {
+#if EMULATOR
+  RESP_INIT(Success);
+  random_reseed(msg->value);
+  msg_debug_write(MessageType_MessageType_Success, resp);
+#else
+  RESP_INIT(Failure);
+  resp->code = FailureType_Failure_UnexpectedMessage;
+  resp->has_message = true;
+  strlcpy(resp->message, "ReseedRandom not supported on hardware",
+          sizeof(resp->message));
+  msg_debug_write(MessageType_MessageType_Failure, resp);
+#endif
+}
 #endif
