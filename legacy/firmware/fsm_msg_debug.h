@@ -100,4 +100,11 @@ void fsm_msgDebugLinkFlashErase(const DebugLinkFlashErase *msg) {
   uint32_t dummy = svc_flash_lock();
   (void)dummy;
 }
+
+void fsm_msgDebugLinkReseedRandom(const DebugLinkReseedRandom *msg) {
+  Success resp;
+  memzero(&resp, sizeof(resp));
+  random_reseed(msg->value);
+  msg_debug_write(MessageType_MessageType_Success, &resp);
+}
 #endif
