@@ -231,9 +231,27 @@ static InputScriptType address_to_script_type(const CoinInfo *coin,
 int cryptoMessageVerify(const CoinInfo *coin, const uint8_t *message,
                         size_t message_len, const char *address,
                         const uint8_t *signature) {
-  // check for invalid signature prefix
-  if (signature[0] < 27 || signature[0] > 43) {
-    return 1;
+  // check if the address is correct
+  InputScriptType script_type = address_to_script_type(coin, address);
+  if (script_type == InputScriptType_EXTERNAL) {
+    return 1;  // invalid address
+  }
+
+  if (signature[0] >= 27 && signature[0] <= 34) {
+    // p2pkh or no script type provided
+    // use the script type from the address
+  } else if (signature[0] >= 35 && signature[0] <= 38) {
+    // segwit-in-p2sh
+    if (script_type != InputScriptType_SPENDP2SHWITNESS) {
+      return 2;  // script type mismatch
+    }
+  } else if (signature[0] >= 39 && signature[0] <= 42) {
+    // segwit
+    if (script_type != InputScriptType_SPENDWITNESS) {
+      return 2;  // script type mismatch
+    }
+  } else {
+    return 3;  // invalid signature prefix
   }
 
   uint8_t hash[HASHER_DIGEST_LENGTH] = {0};
@@ -246,30 +264,16 @@ int cryptoMessageVerify(const CoinInfo *coin, const uint8_t *message,
   uint8_t pubkey[65] = {0};
   if (ecdsa_recover_pub_from_sig(coin->curve->params, pubkey, signature + 1,
                                  hash, recid) != 0) {
-    return 3;
+    return 4;  // invalid signature data
   }
+
   // convert public key to compressed pubkey if necessary
   if (compressed) {
     pubkey[0] = 0x02 | (pubkey[64] & 1);
   }
 
-  // check if the address is correct
   uint8_t addr_raw[MAX_ADDR_RAW_SIZE] = {0};
   uint8_t recovered_raw[MAX_ADDR_RAW_SIZE] = {0};
-
-  InputScriptType script_type = InputScriptType_SPENDADDRESS;
-  if (signature[0] >= 27 && signature[0] <= 34) {
-    // p2pkh or no script type provided
-    script_type = address_to_script_type(coin, address);
-  } else if (signature[0] >= 35 && signature[0] <= 38) {
-    // segwit-in-p2sh
-    script_type = InputScriptType_SPENDP2SHWITNESS;
-  } else if (signature[0] >= 39 && signature[0] <= 42) {
-    // segwit
-    script_type = InputScriptType_SPENDWITNESS;
-  } else {
-    return 4;
-  }
 
   if (script_type == InputScriptType_SPENDADDRESS) {
     // p2pkh
@@ -277,7 +281,7 @@ int cryptoMessageVerify(const CoinInfo *coin, const uint8_t *message,
 #if !BITCOIN_ONLY
     if (coin->cashaddr_prefix) {
       if (!cash_addr_decode(addr_raw, &len, coin->cashaddr_prefix, address)) {
-        return 2;
+        return 1;  // invalid address
       }
     } else
 #endif
@@ -289,7 +293,7 @@ int cryptoMessageVerify(const CoinInfo *coin, const uint8_t *message,
                           coin->curve->hasher_pubkey, recovered_raw);
     if (memcmp(recovered_raw, addr_raw, len) != 0 ||
         len != address_prefix_bytes_len(coin->address_type) + 20) {
-      return 2;
+      return 5;  // signature does not match address and message
     }
   } else if (script_type == InputScriptType_SPENDP2SHWITNESS) {
     // segwit-in-p2sh
@@ -300,7 +304,7 @@ int cryptoMessageVerify(const CoinInfo *coin, const uint8_t *message,
                                       recovered_raw);
     if (memcmp(recovered_raw, addr_raw, len) != 0 ||
         len != address_prefix_bytes_len(coin->address_type_p2sh) + 20) {
-      return 2;
+      return 5;  // signature does not match address and message
     }
   } else if (script_type == InputScriptType_SPENDWITNESS) {
     // segwit
@@ -309,14 +313,14 @@ int cryptoMessageVerify(const CoinInfo *coin, const uint8_t *message,
     if (!coin->bech32_prefix ||
         !segwit_addr_decode(&witver, recovered_raw, &len, coin->bech32_prefix,
                             address)) {
-      return 4;
+      return 1;  // invalid address
     }
     ecdsa_get_pubkeyhash(pubkey, coin->curve->hasher_pubkey, addr_raw);
     if (memcmp(recovered_raw, addr_raw, len) != 0 || witver != 0 || len != 20) {
-      return 2;
+      return 5;  // signature does not match address and message
     }
   } else {
-    return 4;
+    return 1;  // invalid address
   }
 
   return 0;
