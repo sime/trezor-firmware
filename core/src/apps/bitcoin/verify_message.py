@@ -67,17 +67,16 @@ async def verify_message(ctx: wire.Context, msg: VerifyMessage) -> Success:
 
     digest = message_digest(coin, message)
 
+    script_type = address_to_script_type(address, coin)
     recid = signature[0]
     if 27 <= recid <= 34:
         # p2pkh or no script type provided
-        script_type = address_to_script_type(address, coin)
-    elif 35 <= recid <= 38:
+        pass  # use the script type from the address
+    elif 35 <= recid <= 38 and script_type == InputScriptType.SPENDP2SHWITNESS:
         # segwit-in-p2sh
-        script_type = InputScriptType.SPENDP2SHWITNESS
         signature = bytes([signature[0] - 4]) + signature[1:]
-    elif 39 <= recid <= 42:
+    elif 39 <= recid <= 42 and script_type == InputScriptType.SPENDWITNESS:
         # native segwit
-        script_type = InputScriptType.SPENDWITNESS
         signature = bytes([signature[0] - 8]) + signature[1:]
     else:
         raise wire.ProcessError("Invalid signature")
