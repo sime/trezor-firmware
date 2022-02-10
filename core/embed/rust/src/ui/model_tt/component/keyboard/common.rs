@@ -71,7 +71,7 @@ impl MultiTapKeyboard {
             Some(pending) if pending.key == key => {
                 // This key is pending. Cycle the last inserted character through the
                 // key content.
-                (true, pending.press + 1)
+                (true, pending.press.wrapping_add(1))
             }
             _ => {
                 // This key is not pending. Append the first character in the key.

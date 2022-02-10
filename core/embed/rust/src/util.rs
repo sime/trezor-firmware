@@ -83,11 +83,11 @@ pub unsafe fn try_with_args_and_kwargs_inline(
 }
 
 pub trait ResultExt {
-    fn panic_on_err_if_debugging(self, message: &str);
+    fn assert_if_debugging_ui(self, message: &str);
 }
 
 impl<T, E> ResultExt for Result<T, E> {
-    fn panic_on_err_if_debugging(self, #[allow(unused)] message: &str) {
+    fn assert_if_debugging_ui(self, #[allow(unused)] message: &str) {
         #[cfg(feature = "ui_debug")]
         if self.is_err() {
             panic!("{}", message);

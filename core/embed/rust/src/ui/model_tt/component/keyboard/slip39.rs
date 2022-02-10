@@ -129,12 +129,12 @@ impl Component for Slip39Input {
         if let Some(word) = self.final_word {
             // We're done with input, paint the full word.
             text.push_str(word)
-                .panic_on_err_if_debugging("Text buffer is too small");
+                .assert_if_debugging_ui("Text buffer is too small");
         } else {
             // Paint an asterisk for each letter of input.
             for ch in iter::repeat('*').take(self.textbox.content().len()) {
                 text.push(ch)
-                    .panic_on_err_if_debugging("Text buffer is too small");
+                    .assert_if_debugging_ui("Text buffer is too small");
             }
             // If we're in the pending state, paint the pending character at the end.
             if let (Some(key), Some(press)) =
@@ -144,7 +144,7 @@ impl Component for Slip39Input {
                 let ch = ascii_text[press % ascii_text.len()] as char;
                 text.pop();
                 text.push(ch)
-                    .panic_on_err_if_debugging("Text buffer is too small");
+                    .assert_if_debugging_ui("Text buffer is too small");
             }
         }
         display::text(
@@ -238,6 +238,6 @@ impl Slip39Mask {
 
     /// Returns `true` if mask has exactly one bit set to 1, or is equal to 0.
     fn is_final(&self) -> bool {
-        self.0 == 0 || self.0.is_power_of_two()
+        self.0.count_ones() <= 1
     }
 }
